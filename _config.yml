@@ -1,7 +1,7 @@
-title: Long Haul
-description: Long Form Jekyll theme built with SASS / COMPASS / SUSY
+title: Kimnamu
+description: Kimnamu Blog
 
-url: http://long-haul.netlify.app
+url: http://kimnamu.github.io
 paginate_path: "blog/page:num/"
 permalink: blog/:title/
 
@@ -22,13 +22,13 @@ navigation:
     url: /contact
 
 social:
-  github: brianmaierjr
-  twitter: brianmaierjr
-  facebook: brianmaierjr
-  email: brimaidesigns@gmail.com
-  linkedin: brianmaierjr
+  github: kimnamu
+  # twitter: brianmaierjr
+  # facebook: brianmaierjr
+  email: jihoon.lucas.kim@gmail.com
+  linkedin: jihoonlucaskim
 
-google_analytics: "UA-58263416-1"
+# google_analytics: "UA-58263416-1"
 
 disqus:
-    shortname: brianmaierjr
+    shortname: kimnamu
