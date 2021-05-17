@@ -489,7 +489,7 @@ CLEAR AFTER FLOATS
 BUTTON DEFAULTS
 ***************/
 .button, .button-secondary, .button-tertiary, .button__outline {
-  background-color: #126ab1;
+  background-color: seagrean;
   display: inline-block;
   position: relative;
   font-family: "Open Sans", Helvetica, Arial, sans-serif;
@@ -523,10 +523,10 @@ BUTTON DEFAULTS
 
 .button__outline {
   background-color: transparent;
-  border: 3px solid #126ab1;
-  color: #126ab1; }
+  border: 3px solid seagrean;
+  color: seagrean; }
   .button__outline:hover {
-    background-color: #126ab1;
+    background-color: seagrean;
     color: #fff; }
 
 /***************
@@ -545,7 +545,7 @@ input[type=text], input[type=email], input[type=phone], input[type=password], in
   width: 300px;
   margin-bottom: .5rem; }
   input[type=text]:focus, input[type=email]:focus, input[type=phone]:focus, input[type=password]:focus, input[type=number]:focus, input[type=search]:focus, textarea:focus {
-    border: 1px solid #126ab1; }
+    border: 1px solid seagrean; }
   input[type=text].full-width, input[type=email].full-width, input[type=phone].full-width, input[type=password].full-width, input[type=number].full-width, input[type=search].full-width, textarea.full-width {
     width: 100%; }
 
@@ -686,11 +686,11 @@ body {
     margin: 0 0 2rem; }
 
 ::-moz-selection {
-  background: #126ab1;
+  background: seagrean;
   color: white; }
 
 ::selection {
-  background: #126ab1;
+  background: seagrean;
   color: white; }
 
 img, video, audio, iframe, object {
@@ -704,7 +704,7 @@ img, video, audio, iframe, object {
 LINK STYLING
 ***************/
 a {
-  color: #126ab1; }
+  color: seagrean; }
   a:hover {
     color: #1b5233; }
 
@@ -722,7 +722,7 @@ MENU STYLING
     .nav-collapse ul li {
       width: 100%;
       display: block;
-      background: #126ab1;
+      background: seagrean;
       border-bottom: 2px solid #349e63; }
       .nav-collapse ul li a {
         color: white;
@@ -753,7 +753,7 @@ MENU STYLING
   float: right;
   line-height: 2em;
   margin-top: .5em;
-  background-color: #126ab1;
+  background-color: seagrean;
   border-radius: 4px;
   padding: 0 .5em;
   color: white;
@@ -800,7 +800,7 @@ PAGE STYLES
 HEADER STYLING
 ***************/
 .header {
-  background-color: #126ab1;
+  background-color: seagrean;
   background-image: url("../img/touring.jpg");
   background-size: cover;
   background-position: center center;
@@ -841,7 +841,7 @@ POST STYLING
     content: "";
     position: absolute;
     top: -1.25em;
-    background: #126ab1;
+    background: seagrean;
     display: block;
     height: 2px;
     width: 150px;
@@ -850,7 +850,7 @@ POST STYLING
     content: "";
     position: absolute;
     bottom: -1.25em;
-    background: #126ab1;
+    background: seagrean;
     display: block;
     height: 2px;
     width: 150px;
@@ -881,7 +881,7 @@ POST STYLING
   margin-bottom: 2rem; }
 
 .post .dropcap {
-  color: #126ab1;
+  color: seagrean;
   margin-right: .45rem; }
 
 .post .featuredImage {
@@ -970,7 +970,7 @@ FOOTER STYLING
           width: 100%;
           height: 100%; }
           .footer-links ul li a svg .outer-shape {
-            fill: #126ab1; }
+            fill: seagrean; }
           .footer-links ul li a svg .inner-shape {
             fill: white; }
       .footer-links ul li:hover a svg .outer-shape {
