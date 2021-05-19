@@ -6,7 +6,7 @@ paginate_path: "blog/page:num/"
 permalink: blog/:title/
 
 # Header Option
-# header: large
+header: large
 
 markdown: kramdown
 highlighter: rouge
@@ -18,8 +18,10 @@ navigation:
     url: /index.html
   - title: About
     url: /about
-  - title: Contact
-    url: /contact
+  - title: Research
+    url: /research
+  - title: Development
+    url: /development
 
 social:
   github: kimnamu
