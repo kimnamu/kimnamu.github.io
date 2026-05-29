@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AWS Just Gave AI Agents a Wallet — AgentCore Payments and the Start of the Agent Economy — Jihoon Kim</title><meta name="description" content="In May 2026, AWS previewed AgentCore Payments, letting AI agents pay for things on their own. From the x402 protocol to production governance, a field-level breakdown."><link rel="canonical" href="https://kimnamu.github.io/writing/agentcore-payments/"><meta name="generator" content="Astro v5.18.2"><!-- Open Graph --><meta property="og:type" content="website"><meta property="og:title" content="AWS Just Gave AI Agents a Wallet — AgentCore Payments and the Start of the Agent Economy — Jihoon Kim"><meta property="og:description" content="In May 2026, AWS previewed AgentCore Payments, letting AI agents pay for things on their own. From the x402 protocol to production governance, a field-level breakdown."><meta property="og:url" content="https://kimnamu.github.io/writing/agentcore-payments/"><meta name="twitter:card" content="summary_large_image"><link rel="alternate" type="application/rss+xml" title="Jihoon Kim" href="/rss.xml"><!-- Apply theme before first paint to avoid flash --><script>
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>I Implemented the Protocol Behind AgentCore Payments — Here&#39;s What the Managed Service Hides — Jihoon Kim</title><meta name="description" content="AWS previewed AgentCore Payments in May 2026, letting agents pay autonomously. I rebuilt the underlying x402 flow from scratch — real signatures, a budget guard, and a runaway-spend experiment — to see what 'connect a wallet' actually commits you to."><link rel="canonical" href="https://kimnamu.github.io/writing/agentcore-payments/"><meta name="generator" content="Astro v5.18.2"><!-- Open Graph --><meta property="og:type" content="website"><meta property="og:title" content="I Implemented the Protocol Behind AgentCore Payments — Here's What the Managed Service Hides — Jihoon Kim"><meta property="og:description" content="AWS previewed AgentCore Payments in May 2026, letting agents pay autonomously. I rebuilt the underlying x402 flow from scratch — real signatures, a budget guard, and a runaway-spend experiment — to see what 'connect a wallet' actually commits you to."><meta property="og:url" content="https://kimnamu.github.io/writing/agentcore-payments/"><meta name="twitter:card" content="summary_large_image"><link rel="alternate" type="application/rss+xml" title="Jihoon Kim" href="/rss.xml"><!-- Apply theme before first paint to avoid flash --><script>
       (() => {
         const saved = localStorage.getItem('theme');
         const dark = saved
@@ -16,48 +16,54 @@
   btn?.addEventListener('click', () => {
     apply(!document.documentElement.classList.contains('dark'));
   });
-</script> <main> <div class="wrap">  <a class="back-link" href="/writing/">← All writing</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-29T00:00:00.000Z">May 29, 2026</time> <span>·</span> <span>6 min read</span> </div> <h1>AWS Just Gave AI Agents a Wallet — AgentCore Payments and the Start of the Agent Economy</h1> <div class="post-meta"> <span class="tag">#AWS</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#Bedrock</span> </div> </header> <div class="prose"> <blockquote>
-<p><em>In May 2026, AWS previewed a capability that lets AI agents spend money on their own. While everyone marveled at the demo, I thought about what it means in production.</em></p>
-<p><em>(All views are my own and do not represent my employer. AgentCore Payments is in preview as of May 2026; features and APIs may change before GA.)</em></p>
+</script> <main> <div class="wrap">  <a class="back-link" href="/writing/">← All writing</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">May 30, 2026</time> <span>·</span> <span>7 min read</span> </div> <h1>I Implemented the Protocol Behind AgentCore Payments — Here&#39;s What the Managed Service Hides</h1> <div class="post-meta"> <span class="tag">#AWS</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#x402</span> </div> </header> <div class="prose"> <blockquote>
+<p><em>AWS previewed a capability that lets AI agents spend money on their own. The demos look magical. So I rebuilt the protocol underneath it from scratch — real cryptographic signing, a budget guard, a runaway-spend experiment — to find out what you actually sign up for when you “connect a wallet.” The code is <a href="https://github.com/kimnamu/x402-lab">on GitHub</a>; every number below comes from running it.</em></p>
+<p><em>(Views are my own. AgentCore Payments is in preview as of May 2026; APIs may change. My implementation models the open x402 protocol it uses — signing is real, settlement is mocked. No real funds move.)</em></p>
 </blockquote>
 <hr>
 <h2 id="the-line-we-just-crossed">The line we just crossed</h2>
-<p>For the last few years, AI agents have been entities that <em>read, think, and talk</em>. They search, summarize, write code, and call APIs. But one thing they couldn’t do: <strong>spend money.</strong></p>
-<p>On May 11, 2026, AWS previewed <strong>Amazon Bedrock AgentCore Payments</strong>. Built with Coinbase and Stripe, it lets AI agents <strong>autonomously pay for APIs, MCP servers, web content, and other agents.</strong></p>
-<p>This isn’t just a payments feature. It’s the first infrastructure that turns an agent into an <strong>economic actor</strong>. And if you’ve ever shipped to production, that sentence should make you both excited and uneasy. This post unpacks why.</p>
-<hr>
-<h2 id="part-1-the-mechanics--how-agentcore-payments-works">Part 1. The mechanics — how AgentCore Payments works</h2>
-<h3 id="why-traditional-payments-dont-work-the-microtransaction-problem">Why traditional payments don’t work: the microtransaction problem</h3>
-<p>The core issue is <strong>size</strong>. A single API call or piece of content an agent buys is usually worth <strong>under a dollar, often a fraction of a cent</strong>. But traditional rails like credit cards carry minimum transaction fees — so paying for a $0.003 piece of data costs more in fees than the data itself. Cards also carry geographic restrictions.</p>
-<p>In other words, “an agent pays small change whenever it needs to” was economically impossible on existing rails. AgentCore Payments solves this with <strong>stablecoins + an open protocol</strong>.</p>
-<h3 id="the-engine-the-x402-protocol">The engine: the x402 protocol</h3>
-<p>AgentCore Payments orchestrates payments using the <strong>x402 protocol</strong> — an open standard led by Coinbase that uses, as the name suggests, the <strong>HTTP 402 Payment Required</strong> status code. It’s been reserved since the early days of HTTP for exactly this purpose, and largely unused for 30 years.</p>
-<p>The flow is strikingly simple:</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>1. Agent sends an HTTP request to a paid endpoint</span></span>
-<span class="line"><span>2. Server responds with HTTP 402 if no payment (here's the price)</span></span>
-<span class="line"><span>3. Agent pays instantly with stablecoin → attaches cryptographic proof</span></span>
-<span class="line"><span>4. Server verifies → grants access</span></span></code></pre>
-<p>No accounts, no KYC, no pre-paid subscriptions, no API-key management. AgentCore Payments manages this entire lifecycle on the agent side — receiving the merchant’s payment request, signing the transaction via the configured wallet provider, and returning proof to the merchant. It handles multi-step flows and exceptions automatically.</p>
-<h3 id="wallets-coinbase-cdp-and-stripe-privy">Wallets: Coinbase CDP and Stripe (Privy)</h3>
-<p>Two wallet providers are supported:</p>
-<ul>
-<li><strong>Coinbase CDP wallet</strong></li>
-<li><strong>Stripe Privy wallet</strong></li>
-</ul>
-<p>Both provide embedded stablecoin wallet operations. Critically: <strong>sensitive credentials like API keys and wallet secrets are stored in AgentCore Identity</strong>, and you can restrict which agents access wallet resources. That’s the first button of governance (more in Part 2).</p>
-<h3 id="discoverability-10000-paid-endpoints">Discoverability: 10,000+ paid endpoints</h3>
-<p>AgentCore Payments ships a ready-to-use <strong>Coinbase x402 Bazaar MCP server</strong>, exposing <strong>10,000+ pay-per-use x402 endpoints</strong> that agents can discover and connect to via AgentCore Gateway. A marketplace of paid tools already exists.</p>
-<h3 id="budget-control-paymentsession">Budget control: PaymentSession</h3>
-<p>The most important part for production. Control happens at the <strong>PaymentSession</strong> level:</p>
-<ul>
-<li>Each session has a <strong>budget limit</strong> (<code>maxSpendAmount</code>, <code>currency</code>) and an <strong>expiry time</strong></li>
-<li>When the session expires or the budget is reached → further payments are <strong>denied</strong></li>
-<li>Limits can be set at <strong>both user and agent levels</strong></li>
-<li>If signing fails after a budget deduction → the failed amount is <strong>not</strong> deducted</li>
-</ul>
-<h3 id="observability-cloudwatch--x-ray">Observability: CloudWatch + X-Ray</h3>
-<p>Every data-plane API call automatically emits <strong>CloudWatch logs</strong> (vended logs) and <strong>X-Ray traces</strong> (vended spans). You can monitor transaction success rates, spending patterns, and diagnose errors across the entire payment lifecycle.</p>
-<h3 id="one-glance-architecture">One-glance architecture</h3>
+<p>For years, agents could read, think, talk, and call APIs. The one thing they couldn’t do was <strong>spend money</strong>. On May 11, 2026, AWS previewed <strong>Amazon Bedrock AgentCore Payments</strong>: built with Coinbase and Stripe, it lets an agent autonomously pay for APIs, MCP servers, web content, and other agents.</p>
+<p>The marketing is “connect a Coinbase CDP or Stripe Privy wallet, set a spending limit, and your agent transacts on its own.” That sentence hides a lot. I wanted to see what’s under it, so I implemented the protocol it runs on — <strong>x402</strong> — myself. Not to replace AWS, but to make the governance questions <em>executable</em> instead of hand-wavy.</p>
+<p>What I built is small enough to read in one sitting: a merchant that speaks HTTP 402, an agent wallet that signs payments with real Ed25519 keys, a <code>PaymentSession</code> budget guard, and an experiment that runs a runaway agent loop with and without the guard. Seven tests, all passing. Let me walk through what I learned.</p>
+<h2 id="part-1--what-a-payment-actually-is">Part 1 — What a payment actually <em>is</em></h2>
+<h3 id="the-microtransaction-problem-why-not-just-use-a-credit-card">The microtransaction problem (why not just use a credit card)</h3>
+<p>An agent buying one API call or one snippet of data is usually paying <strong>fractions of a cent</strong>. Credit cards have minimum fees that make a $0.003 charge absurd, plus geographic limits. So “agent pays small change on demand” was economically impossible on card rails. x402 solves it with stablecoins over an open protocol.</p>
+<h3 id="x402-in-three-steps">x402 in three steps</h3>
+<p>x402 (an open standard from Coinbase) reuses the <strong>HTTP 402 Payment Required</strong> status code — reserved since the early web, basically unused for 30 years. The flow:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>1. Agent requests a paid resource → server replies 402 + payment requirements</span></span>
+<span class="line"><span>2. Agent signs the requirements with its wallet key → a payment proof</span></span>
+<span class="line"><span>3. Agent retries with the proof → server verifies → 200 + data</span></span></code></pre>
+<p>Here’s my merchant returning a 402. Notice the <strong>nonce</strong> — it’s what stops a captured proof from being replayed:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">def</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> _make_requirements</span><span style="color:#24292E;--shiki-dark:#E1E4E8">(self) -> </span><span style="color:#005CC5;--shiki-dark:#79B8FF">dict</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">    return</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "scheme"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"exact"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "amount"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"0.001"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "currency"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"USDC"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "pay_to"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">MERCHANT_ADDRESS</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "resource"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"/v1/market-data"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "nonce"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: secrets.token_hex(</span><span style="color:#005CC5;--shiki-dark:#79B8FF">8</span><span style="color:#24292E;--shiki-dark:#E1E4E8">),   </span><span style="color:#6A737D;--shiki-dark:#6A737D"># fresh per challenge → no replay</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    }</span></span></code></pre>
+<h3 id="the-part-the-managed-service-hides-what-the-agent-signs">The part the managed service hides: what the agent signs</h3>
+<p>“Connect a wallet” makes the signing invisible. But the signature <em>is</em> the security artifact. When my agent pays, it signs exactly this payload with an Ed25519 key:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">def</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> sign_payment</span><span style="color:#24292E;--shiki-dark:#E1E4E8">(self, requirements: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">dict</span><span style="color:#24292E;--shiki-dark:#E1E4E8">) -> </span><span style="color:#005CC5;--shiki-dark:#79B8FF">dict</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    payload </span><span style="color:#D73A49;--shiki-dark:#F97583">=</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "scheme"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:   requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"scheme"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "amount"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:   requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"amount"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "currency"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"currency"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "pay_to"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:   requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"pay_to"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "resource"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"resource"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "nonce"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:    requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"nonce"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "from"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:     </span><span style="color:#005CC5;--shiki-dark:#79B8FF">self</span><span style="color:#24292E;--shiki-dark:#E1E4E8">.address,</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    sig </span><span style="color:#D73A49;--shiki-dark:#F97583">=</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> self</span><span style="color:#24292E;--shiki-dark:#E1E4E8">._sk.sign(canonical(payload))</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">    return</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> {</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"payload"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: payload, </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"signature"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: _b64(sig), </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"public_key"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">self</span><span style="color:#24292E;--shiki-dark:#E1E4E8">.public_key_b64}</span></span></code></pre>
+<p>That signature is a non-repudiable authorization: <em>this wallet agreed to pay this amount to this recipient for this resource at this moment.</em> When you let an agent “transact autonomously,” this is what it’s authorizing on your behalf, thousands of times, with no human in the loop. Sit with that for a second.</p>
+<p>And it’s tamper-evident. Sign a payload, then try to lower the amount before sending — verification fails:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>verify (untampered):     True</span></span>
+<span class="line"><span>verify (amount tampered): False</span></span></code></pre>
+<p>That’s a real test in the repo (<code>test_signature_tampering_rejected</code>), not a diagram.</p>
+<h3 id="what-aws-wraps-around-this">What AWS wraps around this</h3>
+<p>In AgentCore, you don’t write any of the above. The managed service maps to:</p>
 
 
 
@@ -87,6 +93,24 @@
 
 
 
+<table><thead><tr><th>Piece</th><th>AgentCore component</th></tr></thead><tbody><tr><td>Wallet keys &#x26; secrets</td><td><strong>AgentCore Identity</strong> (PaymentCredentialProvider)</td></tr><tr><td>Connecting to paid endpoints</td><td><strong>AgentCore Gateway</strong> (+ Coinbase x402 Bazaar, 10,000+ endpoints)</td></tr><tr><td>Crossing paywalled sites</td><td><strong>AgentCore Browser</strong></td></tr><tr><td>Budget ceiling + expiry</td><td><strong>PaymentSession</strong> (<code>maxSpendAmount</code>, currency, TTL)</td></tr><tr><td>Audit trail</td><td><strong>CloudWatch</strong> vended logs + <strong>X-Ray</strong> spans</td></tr></tbody></table>
+<p>Convenient. But convenience is exactly why the next part matters.</p>
+<h2 id="part-2--the-experiment-what-a-runaway-agent-costs">Part 2 — The experiment: what a runaway agent costs</h2>
+<p>Agents are non-deterministic. They get stuck in loops; they get prompt-injected. So the question isn’t “does payment work” — it’s “<strong>when it goes wrong, how bad is it?</strong>” I ran the same buggy agent, stuck in a 100-call loop against a $0.001 endpoint, two ways.</p>
+<h3 id="without-a-budget-guard">Without a budget guard</h3>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">for</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> _ </span><span style="color:#D73A49;--shiki-dark:#F97583">in</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> range</span><span style="color:#24292E;--shiki-dark:#E1E4E8">(</span><span style="color:#005CC5;--shiki-dark:#79B8FF">100</span><span style="color:#24292E;--shiki-dark:#E1E4E8">):</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    call_paid_api(merchant, wallet, </span><span style="color:#E36209;--shiki-dark:#FFAB70">session</span><span style="color:#D73A49;--shiki-dark:#F97583">=</span><span style="color:#005CC5;--shiki-dark:#79B8FF">None</span><span style="color:#24292E;--shiki-dark:#E1E4E8">)   </span><span style="color:#6A737D;--shiki-dark:#6A737D"># PAYG: no ceiling</span></span></code></pre>
+<p>Result: <strong>100 payments, all of them. $0.10 spent, nothing stops it.</strong> At $0.001 that’s pocket change — but the loop is the point, not the unit price. Which brings us to throughput.</p>
+<h3 id="a-human-will-catch-it-is-not-a-control">”A human will catch it” is not a control</h3>
+<p>I measured how fast the full handshake runs (challenge → Ed25519 sign → verify):</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>3,497 payments/sec on an M-series laptop</span></span>
+<span class="line"><span>= $209.79 / minute of autonomous spend at $0.001/call</span></span></code></pre>
+<p>A human cannot react to that. By the time you’ve read this paragraph, an unguarded loop has spent more than your coffee. “We’ll monitor it” is not a safety mechanism when the agent transacts 3,500 times a second.</p>
+<h3 id="with-a-budget-guard">With a budget guard</h3>
+<p>The guard sits <em>between</em> getting the 402 and signing it — it’s the entire governance lever:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">if</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> session </span><span style="color:#D73A49;--shiki-dark:#F97583">is</span><span style="color:#D73A49;--shiki-dark:#F97583"> not</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> None</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    reserved </span><span style="color:#D73A49;--shiki-dark:#F97583">=</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> session.authorize(amount)   </span><span style="color:#6A737D;--shiki-dark:#6A737D"># raises BudgetExceeded → payment never signed</span></span></code></pre>
+<p>Same 100-call loop, $0.05 ceiling:</p>
 
 
 
@@ -95,50 +119,64 @@
 
 
 
-<table><thead><tr><th>Component</th><th>Role</th></tr></thead><tbody><tr><td><strong>x402 protocol</strong></td><td>HTTP 402-based payment orchestration engine</td></tr><tr><td><strong>CDP / Privy wallet</strong></td><td>Executes stablecoin payments</td></tr><tr><td><strong>AgentCore Identity</strong></td><td>Stores wallet credentials + restricts access</td></tr><tr><td><strong>AgentCore Gateway</strong></td><td>Connects to paid MCP/endpoints (incl. x402 Bazaar)</td></tr><tr><td><strong>AgentCore Browser</strong></td><td>Autonomous access to x402-enabled paywalled sites</td></tr><tr><td><strong>PaymentSession</strong></td><td>Budget limit / expiry control</td></tr><tr><td><strong>CloudWatch / X-Ray</strong></td><td>End-to-end observability</td></tr></tbody></table>
-<p>Representative use cases AWS cites: a <strong>research agent</strong> buying paid data sources within a budget, a <strong>financial analysis agent</strong> paying for real-time market data behind paywalls, a <strong>browser agent</strong> crossing paywalls, <strong>pay-per-intelligence</strong> (paying models only for tokens used), and on-demand storage.</p>
-<hr>
-<h2 id="part-2-strategy--what-the-agent-economy-means-for-the-enterprise">Part 2. Strategy — what the “agent economy” means for the enterprise</h2>
-<p>The tech is clean. The hard questions start here.</p>
-<h3 id="a-paradigm-shift-from-cost-center-to-autonomous-spender">A paradigm shift: from cost center to autonomous spender</h3>
-<p>Until now, cloud spend in the enterprise was a chain where <strong>human-approved budgets</strong> were consumed by <strong>human-built systems</strong>. AgentCore Payments removes the human from that chain. The agent <strong>decides and spends on its own, mid-execution.</strong></p>
-<p>This changes three things at once:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Mode</th><th>Payments</th><th>Spent</th><th>Stopped at</th></tr></thead><tbody><tr><td>No guard</td><td>100 / 100</td><td>$0.100</td><td>never</td></tr><tr><td>Budget guard ($0.05)</td><td>50</td><td>$0.050</td><td><strong>call #51</strong></td></tr></tbody></table>
+<h3 id="the-finding-i-didnt-expect-budget-alone-isnt-enough">The finding I didn’t expect: budget alone isn’t enough</h3>
+<p>I added a third run — a <strong>$999 budget</strong> (effectively unlimited) but a session that expires after 20 attempts:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Mode</th><th>Payments</th><th>Stopped at</th></tr></thead><tbody><tr><td>TTL guard ($999 budget, 20-attempt TTL)</td><td>20</td><td><strong>call #21, on <em>time</em></strong></td></tr></tbody></table>
+<p>A slow-drip agent that stays under any single budget can still run forever. Money caps the <em>amount</em>; only a TTL caps the <em>duration</em>. <strong>You need both</strong> — which is exactly why AgentCore’s PaymentSession has both <code>maxSpendAmount</code> <em>and</em> an expiry. Now I know why, because I watched the failure mode the expiry exists to prevent.</p>
+<h3 id="the-edge-case-aws-documents--and-why-it-bites">The edge case AWS documents — and why it bites</h3>
+<p>AWS’s docs note: if signing fails <em>after</em> a budget deduction, the budget isn’t charged. Sounds like a footnote. It isn’t. Without that refund, every transient failure permanently burns budget, and a flaky endpoint slowly starves your agent. My guard implements it; a test proves spend stays exact across a mid-flight failure:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>5 attempts, 1 fails after reservation → charged for 4, not 5 ✓</span></span></code></pre>
+<h2 id="part-3--what-this-means-for-the-enterprise">Part 3 — What this means for the enterprise</h2>
+<p>Here’s the shift, stated plainly: cloud spend used to be <strong>human-approved budgets consumed by human-built systems</strong>. AgentCore Payments removes the human from the loop. The agent decides and spends, mid-execution, 3,500 times a second.</p>
+<p>That changes three things at once:</p>
 <ol>
-<li>
-<p><strong>FinOps</strong>: “How much will this workload spend this month” is no longer deterministic. A non-deterministic agent spends non-deterministically. Budgeting shifts from <em>forecasting</em> to <em>real-time control</em>.</p>
-</li>
-<li>
-<p><strong>Security/Identity</strong>: Agents carry wallets. A hijacked or prompt-injected agent now causes not just data leakage but <strong>financial loss</strong>. The attack surface changes.</p>
-</li>
-<li>
-<p><strong>Governance/Compliance</strong>: The answer to “who decided to spend this money” becomes “the AI did.” Audit, accountability, and regulatory compliance (especially in finance) face fundamentally new questions.</p>
-</li>
+<li><strong>FinOps</strong> stops being forecasting and becomes real-time control. “How much will this cost this month” is no longer a number you can predict; it’s a ceiling you have to enforce.</li>
+<li><strong>Security</strong> gains a money dimension. A prompt-injected agent no longer just leaks data — it spends. The signature I showed in Part 1 is what an attacker would be inducing your agent to produce.</li>
+<li><strong>Governance</strong> has to answer “who decided to spend this?” with “the AI did, under these limits, and here’s the audit trail.” If you can’t produce the limits and the trail, you’re not ready.</li>
 </ol>
-<h3 id="why-cover-this-topic-now">Why cover this topic now</h3>
-<p>Most organizations haven’t even productionized “making an agent <em>talk</em>.” Yet the infrastructure has already moved to “making an agent <em>spend</em>.” That <strong>gap</strong> is exactly where consultants and architects create value.</p>
-<p>Anyone can build a demo in five minutes. But few can answer “if your agent runs away and spends $10,000 in an hour, who’s accountable?” <strong>Production reality must always be considered a year ahead of the demo.</strong></p>
-<hr>
-<h2 id="part-3-so-what-about-commerce-agent-governance">Part 3. So, what about commerce agent governance?</h2>
-<p>That’s the topic I cover in a separate companion piece. To plant the five core questions:</p>
-<ol>
-<li><strong>Budget control</strong> — Are session limits enough? What about daily/monthly cumulative caps and anomaly detection?</li>
-<li><strong>Least privilege</strong> — Which agent accesses which wallet, up to how much? How do you design AgentCore Identity?</li>
-<li><strong>Auditability</strong> — Does every spend trace back to “why was this bought”? Are CloudWatch logs sufficient?</li>
-<li><strong>Failure &#x26; runaway containment</strong> — Where’s the kill switch? How do you stop malicious spending from prompt injection?</li>
-<li><strong>Compliance</strong> — Is autonomous payment even allowed in finance and regulated industries? When must human-in-the-loop be enforced?</li>
-</ol>
-<p>I’ve organized these five into a <strong>Commerce Agent Governance Framework</strong> as a separate checklist document.</p>
-<hr>
+<p>The gap is the opportunity. Most organizations haven’t productionized an agent that <em>talks</em>, yet the infrastructure already lets agents <em>spend</em>. The consultants and architects who can answer “how do we do this under control” — with executable answers, not slideware — are the ones who’ll be trusted with it.</p>
+<p>I turned the control questions into a checklist backed by these same experiments: see the companion piece, <strong><a href="/writing/commerce-agent-governance/">the Commerce Agent Governance Framework</a></strong>.</p>
 <h2 id="closing">Closing</h2>
-<p>AWS just gave AI agents a wallet. Technically it’s elegant, and it solves the real microtransaction problem. But to run this in an enterprise, you must <strong>design governance before you turn payments on</strong>.</p>
-<p>The agent economy has begun. The question isn’t “can we” — it’s <strong>“can we do it under control.”</strong></p>
+<p>AWS gave agents a wallet, and the protocol underneath is genuinely elegant. But “connect a wallet and set a limit” compresses a non-repudiable signing authority, a 3,500/sec spend rate, and a two-dimensional containment problem into one sentence. The right move isn’t to fear it — it’s to <strong>turn payments on only after you’ve designed, and tested, the guard.</strong></p>
+<p>The agent economy has started. The question was never “can we.” It’s “can we do it under control” — and that’s an engineering question with a measurable answer.</p>
 <hr>
-<p><em>How far is your organization ready to grant agents autonomy — especially with money? Share your thoughts in the comments.</em></p>
+<p><em>Code: <a href="https://github.com/kimnamu/x402-lab">github.com/kimnamu/x402-lab</a> — clone it, run <code>experiment.py</code>, get your own numbers. How far is your org ready to let agents spend? I’d genuinely like to know.</em></p>
 <hr>
 <h3 id="references-verified-as-of-may-2026">References (verified, as of May 2026)</h3>
 <ul>
-<li>AWS News Blog, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments, Agent Toolkit for AWS, and more” (2026-05-11)</li>
-<li>AWS Documentation, “Amazon Bedrock AgentCore payments” (Bedrock AgentCore Developer Guide)</li>
-<li>x402.org / github.com/coinbase/x402</li>
+<li>AWS Documentation, “Amazon Bedrock AgentCore payments” (Developer Guide) — PaymentSession, x402, CDP/Privy wallets, Identity, observability</li>
+<li>AWS News Blog, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments…” (2026-05-11)</li>
+<li>x402 protocol — x402.org / github.com/coinbase/x402</li>
 </ul> </div> </article>  </div> </main> <footer class="site-footer"> <div class="wrap"> <span>Views are my own and do not represent my employer.</span> <span class="footer-links"> <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/kimnamu" target="_blank" rel="noopener">GitHub</a>  <a href="/rss.xml">RSS</a> </span> </div> </footer> <p style="text-align:center;font-size:0.75rem;color:var(--fg-faint);padding-bottom:1.5rem;margin:0;">
 © 2026 Jihoon Kim </p> </body></html>

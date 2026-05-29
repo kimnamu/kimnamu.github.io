@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ko"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AWS가 AI 에이전트에게 지갑을 줬다 — AgentCore Payments와 &#39;에이전트 경제&#39;의 시작 — Jihoon Kim</title><meta name="description" content="2026년 5월, AWS는 AI 에이전트가 스스로 결제하게 하는 AgentCore Payments를 preview로 공개했다. x402 프로토콜부터 production 거버넌스까지, 현장 관점에서 해부한다."><link rel="canonical" href="https://kimnamu.github.io/ko/writing/agentcore-payments/"><meta name="generator" content="Astro v5.18.2"><!-- Open Graph --><meta property="og:type" content="website"><meta property="og:title" content="AWS가 AI 에이전트에게 지갑을 줬다 — AgentCore Payments와 '에이전트 경제'의 시작 — Jihoon Kim"><meta property="og:description" content="2026년 5월, AWS는 AI 에이전트가 스스로 결제하게 하는 AgentCore Payments를 preview로 공개했다. x402 프로토콜부터 production 거버넌스까지, 현장 관점에서 해부한다."><meta property="og:url" content="https://kimnamu.github.io/ko/writing/agentcore-payments/"><meta name="twitter:card" content="summary_large_image"><link rel="alternate" type="application/rss+xml" title="Jihoon Kim" href="/rss.xml"><!-- Apply theme before first paint to avoid flash --><script>
+<!DOCTYPE html><html lang="ko"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AgentCore Payments의 프로토콜을 직접 구현해봤다 — 관리형 서비스가 감추는 것 — Jihoon Kim</title><meta name="description" content="AWS가 2026년 5월 preview한 AgentCore Payments는 에이전트가 스스로 결제하게 한다. 그 바닥의 x402 흐름을 직접 구현했다 — 실제 서명, 예산 가드, 폭주 시뮬레이션까지. '지갑을 연결하라'는 한 문장이 무엇을 약속하는지 보려고."><link rel="canonical" href="https://kimnamu.github.io/ko/writing/agentcore-payments/"><meta name="generator" content="Astro v5.18.2"><!-- Open Graph --><meta property="og:type" content="website"><meta property="og:title" content="AgentCore Payments의 프로토콜을 직접 구현해봤다 — 관리형 서비스가 감추는 것 — Jihoon Kim"><meta property="og:description" content="AWS가 2026년 5월 preview한 AgentCore Payments는 에이전트가 스스로 결제하게 한다. 그 바닥의 x402 흐름을 직접 구현했다 — 실제 서명, 예산 가드, 폭주 시뮬레이션까지. '지갑을 연결하라'는 한 문장이 무엇을 약속하는지 보려고."><meta property="og:url" content="https://kimnamu.github.io/ko/writing/agentcore-payments/"><meta name="twitter:card" content="summary_large_image"><link rel="alternate" type="application/rss+xml" title="Jihoon Kim" href="/rss.xml"><!-- Apply theme before first paint to avoid flash --><script>
       (() => {
         const saved = localStorage.getItem('theme');
         const dark = saved
@@ -16,48 +16,54 @@
   btn?.addEventListener('click', () => {
     apply(!document.documentElement.classList.contains('dark'));
   });
-</script> <main> <div class="wrap">  <a class="back-link" href="/ko/writing/">← 전체 글</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-29T00:00:00.000Z">2026년 5월 29일</time> <span>·</span> <span>7 분 분량</span> </div> <h1>AWS가 AI 에이전트에게 지갑을 줬다 — AgentCore Payments와 &#39;에이전트 경제&#39;의 시작</h1> <div class="post-meta"> <span class="tag">#AWS</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#Bedrock</span> </div> </header> <div class="prose"> <blockquote>
-<p><em>2026년 5월, AWS는 AI 에이전트가 스스로 돈을 쓰게 만드는 기능을 preview로 내놨습니다. 모두가 데모에 열광할 때, 저는 production에서 이게 무엇을 의미하는지 생각했습니다.</em></p>
-<p><em>(본 글의 모든 견해는 개인 의견이며, 고용주를 대변하지 않습니다. AgentCore Payments는 2026년 5월 기준 preview이며 기능·API는 GA 전 변경될 수 있습니다.)</em></p>
+</script> <main> <div class="wrap">  <a class="back-link" href="/ko/writing/">← 전체 글</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">2026년 5월 30일</time> <span>·</span> <span>8 분 분량</span> </div> <h1>AgentCore Payments의 프로토콜을 직접 구현해봤다 — 관리형 서비스가 감추는 것</h1> <div class="post-meta"> <span class="tag">#AWS</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#x402</span> </div> </header> <div class="prose"> <blockquote>
+<p><em>AWS가 AI 에이전트에게 스스로 돈을 쓰게 하는 기능을 내놨다. 데모는 마법 같다. 그래서 나는 그 밑의 프로토콜을 직접 구현했다 — 실제 암호학적 서명, 예산 가드, 폭주 시뮬레이션. “지갑을 연결하라”가 실제로 무엇을 약속하는 건지 보려고. 코드는 <a href="https://github.com/kimnamu/x402-lab">GitHub</a>에 있고, 아래 모든 숫자는 그걸 실제로 돌려서 나온 값이다.</em></p>
+<p><em>(개인 의견. AgentCore Payments는 2026년 5월 기준 preview이며 API는 변경될 수 있다. 내 구현은 이 서비스가 쓰는 개방형 x402 프로토콜을 모델링한 것 — 서명은 실제, settlement는 mock이다. 실제 자금은 움직이지 않는다.)</em></p>
 </blockquote>
 <hr>
-<h2 id="들어가며-우리가-방금-넘은-선">들어가며: 우리가 방금 넘은 선</h2>
-<p>지난 몇 년간 AI 에이전트는 “읽고, 생각하고, 말하는” 존재였습니다. 검색하고, 요약하고, 코드를 짜고, API를 호출했죠. 하지만 한 가지는 못 했습니다 — <strong>돈을 쓰는 것.</strong></p>
-<p>2026년 5월 11일, AWS는 <strong>Amazon Bedrock AgentCore Payments</strong>를 preview로 발표했습니다. Coinbase, Stripe와 함께 만든 이 기능은 AI 에이전트가 <strong>API, MCP 서버, 웹 콘텐츠, 그리고 다른 에이전트에게 자율적으로 비용을 지불</strong>하게 합니다.</p>
-<p>이건 단순한 결제 기능 추가가 아닙니다. 에이전트가 **경제 주체(economic actor)**가 되는 첫 인프라입니다. 그리고 production 배포를 해본 사람이라면 이 문장에서 흥분과 동시에 등골이 서늘해져야 정상입니다. 왜인지 이 글에서 풀어보겠습니다.</p>
-<hr>
-<h2 id="part-1-기술-해부--agentcore-payments는-어떻게-작동하는가">Part 1. 기술 해부 — AgentCore Payments는 어떻게 작동하는가</h2>
-<h3 id="왜-기존-결제로는-안-되는가-마이크로트랜잭션-문제">왜 기존 결제로는 안 되는가: 마이크로트랜잭션 문제</h3>
-<p>핵심 문제는 <strong>금액의 크기</strong>입니다. 에이전트가 호출하는 API 한 건, 콘텐츠 한 조각의 값은 보통 <strong>1달러 미만, 종종 1센트의 분수</strong>입니다. 그런데 신용카드 같은 전통적 결제 수단은 최소 거래 수수료가 있어서, 0.3센트짜리 데이터를 사는 데 수수료가 배보다 배꼽이 됩니다. 게다가 카드는 지역 제약도 큽니다.</p>
-<p>즉, **“에이전트가 필요할 때마다 잔돈을 지불한다”**는 시나리오는 기존 결제 인프라로는 경제적으로 불가능했습니다. AgentCore Payments는 이 마이크로트랜잭션 문제를 <strong>스테이블코인 + 개방형 프로토콜</strong>로 풉니다.</p>
-<h3 id="엔진-x402-프로토콜">엔진: x402 프로토콜</h3>
-<p>AgentCore Payments는 <strong>x402 프로토콜</strong>로 결제를 오케스트레이션합니다. x402는 Coinbase가 주도하는 개방형 표준으로, 이름 그대로 <strong>HTTP 402 Payment Required</strong> 상태 코드를 사용합니다 — HTTP 초창기부터 “결제 필요”를 위해 예약돼 있었지만 30년간 거의 안 쓰이던 그 코드입니다.</p>
-<p>흐름은 놀랍도록 단순합니다:</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>1. 에이전트가 유료 엔드포인트에 HTTP 요청을 보낸다</span></span>
-<span class="line"><span>2. 서버가 결제가 없으면 → HTTP 402 응답 (얼마를 내라)</span></span>
-<span class="line"><span>3. 에이전트가 스테이블코인으로 즉시 지불 → 암호학적 증명(proof) 첨부</span></span>
-<span class="line"><span>4. 서버가 검증 후 → 접근 허용</span></span></code></pre>
-<p>계정도, KYC도, 사전 구독도, API 키 관리도 필요 없습니다. AgentCore Payments는 이 전체 라이프사이클을 에이전트 쪽에서 관리합니다 — 머천트의 결제 요청 수신 → 지갑 provider를 통한 트랜잭션 서명 → 머천트에게 증명 반환까지. 다단계 흐름과 예외 처리를 자동으로 합니다.</p>
-<h3 id="지갑-coinbase-cdp와-stripeprivy">지갑: Coinbase CDP와 Stripe(Privy)</h3>
-<p>두 가지 지갑 provider를 지원합니다:</p>
-<ul>
-<li><strong>Coinbase CDP 지갑</strong></li>
-<li><strong>Stripe Privy 지갑</strong></li>
-</ul>
-<p>둘 다 임베디드 스테이블코인 지갑 연산을 제공합니다. 중요한 점: <strong>API 키와 지갑 시크릿 같은 민감 정보는 AgentCore Identity에 저장</strong>되고, 어떤 에이전트가 지갑 리소스에 접근할 수 있는지를 제한할 수 있습니다. 이게 거버넌스의 첫 단추입니다 (Part 2에서 자세히).</p>
-<h3 id="발견-가능성-10000개의-유료-엔드포인트">발견 가능성: 10,000개의 유료 엔드포인트</h3>
-<p>AgentCore Payments는 <strong>Coinbase x402 Bazaar MCP 서버</strong>를 즉시 사용 가능한 형태로 제공합니다. 여기엔 <strong>1만 개 이상의 pay-per-use x402 엔드포인트</strong>가 노출돼 있고, AgentCore Gateway를 통해 에이전트가 검색·연결할 수 있습니다. 이미 “유료 도구의 마켓플레이스”가 존재한다는 뜻입니다.</p>
-<h3 id="예산-통제-paymentsession">예산 통제: PaymentSession</h3>
-<p>production 관점에서 가장 중요한 부분입니다. 통제는 <strong>PaymentSession</strong> 단위로 이뤄집니다:</p>
-<ul>
-<li>각 세션에 <strong>예산 한도</strong>(<code>maxSpendAmount</code>, <code>currency</code>)와 <strong>만료 시간</strong> 설정</li>
-<li>세션이 만료되거나 예산이 소진되면 → 이후 결제 요청 <strong>거부</strong></li>
-<li>사용자 레벨과 에이전트 레벨 <strong>양쪽</strong>에서 한도 설정 가능</li>
-<li>결제 서명이 예산 차감 후 실패하면 → 실패분은 <strong>차감되지 않음</strong></li>
-</ul>
-<h3 id="관측가능성-cloudwatch--x-ray">관측가능성: CloudWatch + X-Ray</h3>
-<p>모든 데이터플레인 API 호출에 대해 <strong>CloudWatch 로그</strong>(vended logs)와 <strong>X-Ray 트레이스</strong>(vended spans)가 자동 발행됩니다. 트랜잭션 성공률, 지출 패턴, 에러 진단을 결제 라이프사이클 전체에 걸쳐 볼 수 있습니다.</p>
-<h3 id="한-장으로-보는-구성">한 장으로 보는 구성</h3>
+<h2 id="우리가-방금-넘은-선">우리가 방금 넘은 선</h2>
+<p>지난 몇 년간 에이전트는 읽고, 생각하고, 말하고, API를 호출했다. 단 하나 못 한 게 <strong>돈을 쓰는 것</strong>이었다. 2026년 5월 11일, AWS는 <strong>Amazon Bedrock AgentCore Payments</strong>를 preview로 공개했다. Coinbase·Stripe와 함께 만든 이 기능은 에이전트가 API, MCP 서버, 웹 콘텐츠, 다른 에이전트에게 <strong>자율적으로 결제</strong>하게 한다.</p>
+<p>마케팅 문구는 “Coinbase CDP 또는 Stripe Privy 지갑을 연결하고, 한도를 설정하면, 에이전트가 알아서 거래한다”이다. 이 한 문장이 꽤 많은 걸 감춘다. 그 아래가 궁금해서, 이 서비스가 돌리는 프로토콜인 <strong>x402</strong>를 직접 구현했다. AWS를 대체하려는 게 아니라, 거버넌스 질문을 <em>말</em>이 아니라 <em>실행 가능한 것</em>으로 만들기 위해서.</p>
+<p>만든 것은 한자리에서 다 읽을 만큼 작다: HTTP 402를 말하는 머천트, 실제 Ed25519 키로 결제에 서명하는 에이전트 지갑, <code>PaymentSession</code> 예산 가드, 그리고 가드가 있을 때와 없을 때 폭주하는 에이전트 루프를 돌리는 실험. 테스트 7개, 전부 통과. 무엇을 배웠는지 풀어본다.</p>
+<h2 id="part-1--결제란-실제로-무엇인가">Part 1 — 결제란 실제로 <em>무엇</em>인가</h2>
+<h3 id="마이크로트랜잭션-문제-왜-카드로는-안-되나">마이크로트랜잭션 문제 (왜 카드로는 안 되나)</h3>
+<p>에이전트가 사는 API 한 건, 데이터 한 조각은 보통 <strong>1센트의 분수</strong>다. 신용카드는 최소 수수료가 있어 0.003달러 결제가 말이 안 되고, 지역 제약도 크다. 그래서 “에이전트가 필요할 때마다 잔돈을 낸다”는 카드로는 경제적으로 불가능했다. x402는 이걸 스테이블코인 + 개방형 프로토콜로 푼다.</p>
+<h3 id="x402-세-단계">x402, 세 단계</h3>
+<p>x402(Coinbase의 개방형 표준)는 <strong>HTTP 402 Payment Required</strong> 상태 코드를 재활용한다 — 초창기 웹부터 예약돼 있었지만 30년간 거의 안 쓰인 코드다. 흐름은:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>1. 에이전트가 유료 리소스 요청 → 서버가 402 + 결제 요건 응답</span></span>
+<span class="line"><span>2. 에이전트가 지갑 키로 요건에 서명 → 결제 증명(proof)</span></span>
+<span class="line"><span>3. proof 붙여 재요청 → 서버 검증 → 200 + 데이터</span></span></code></pre>
+<p>내 머천트가 402를 반환하는 부분이다. <strong>nonce</strong>를 주목하라 — 캡처한 proof를 재사용(replay)하지 못하게 막는 장치다:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">def</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> _make_requirements</span><span style="color:#24292E;--shiki-dark:#E1E4E8">(self) -> </span><span style="color:#005CC5;--shiki-dark:#79B8FF">dict</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">    return</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "scheme"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"exact"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "amount"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"0.001"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "currency"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"USDC"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "pay_to"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">MERCHANT_ADDRESS</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "resource"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"/v1/market-data"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "nonce"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: secrets.token_hex(</span><span style="color:#005CC5;--shiki-dark:#79B8FF">8</span><span style="color:#24292E;--shiki-dark:#E1E4E8">),   </span><span style="color:#6A737D;--shiki-dark:#6A737D"># 챌린지마다 새로 → replay 차단</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    }</span></span></code></pre>
+<h3 id="관리형-서비스가-감추는-것-에이전트가-무엇에-서명하는가">관리형 서비스가 감추는 것: 에이전트가 무엇에 서명하는가</h3>
+<p>“지갑을 연결하라”는 서명을 보이지 않게 만든다. 하지만 서명이야말로 보안의 핵심이다. 내 에이전트가 결제할 때, Ed25519 키로 정확히 이 payload에 서명한다:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">def</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> sign_payment</span><span style="color:#24292E;--shiki-dark:#E1E4E8">(self, requirements: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">dict</span><span style="color:#24292E;--shiki-dark:#E1E4E8">) -> </span><span style="color:#005CC5;--shiki-dark:#79B8FF">dict</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    payload </span><span style="color:#D73A49;--shiki-dark:#F97583">=</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "scheme"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:   requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"scheme"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "amount"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:   requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"amount"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "currency"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"currency"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "pay_to"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:   requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"pay_to"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "resource"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"resource"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "nonce"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:    requirements[</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"nonce"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">        "from"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:     </span><span style="color:#005CC5;--shiki-dark:#79B8FF">self</span><span style="color:#24292E;--shiki-dark:#E1E4E8">.address,</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    sig </span><span style="color:#D73A49;--shiki-dark:#F97583">=</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> self</span><span style="color:#24292E;--shiki-dark:#E1E4E8">._sk.sign(canonical(payload))</span></span>
+<span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">    return</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> {</span><span style="color:#032F62;--shiki-dark:#9ECBFF">"payload"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: payload, </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"signature"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: _b64(sig), </span><span style="color:#032F62;--shiki-dark:#9ECBFF">"public_key"</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">self</span><span style="color:#24292E;--shiki-dark:#E1E4E8">.public_key_b64}</span></span></code></pre>
+<p>이 서명은 부인 불가능한 승인이다: <em>이 지갑이, 이 금액을, 이 수신자에게, 이 리소스를 위해, 이 순간에 지불하기로 동의했다.</em> 에이전트를 “자율적으로 거래”하게 둔다는 건, 사람 개입 없이 수천 번 당신을 대신해 이걸 승인하게 둔다는 뜻이다. 잠깐 곱씹어볼 만하다.</p>
+<p>게다가 변조가 드러난다. payload에 서명한 뒤, 보내기 전에 금액을 낮춰보면 검증이 실패한다:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>verify (변조 안 함):   True</span></span>
+<span class="line"><span>verify (금액 변조):    False</span></span></code></pre>
+<p>repo의 실제 테스트(<code>test_signature_tampering_rejected</code>)다. 다이어그램이 아니라.</p>
+<h3 id="aws가-이-위에-감싸는-것">AWS가 이 위에 감싸는 것</h3>
+<p>AgentCore에서는 위 코드를 한 줄도 안 쓴다. 관리형 서비스가 이렇게 매핑된다:</p>
 
 
 
@@ -87,6 +93,24 @@
 
 
 
+<table><thead><tr><th>요소</th><th>AgentCore 구성요소</th></tr></thead><tbody><tr><td>지갑 키·시크릿</td><td><strong>AgentCore Identity</strong> (PaymentCredentialProvider)</td></tr><tr><td>유료 엔드포인트 연결</td><td><strong>AgentCore Gateway</strong> (+ Coinbase x402 Bazaar, 1만+ 엔드포인트)</td></tr><tr><td>페이월 사이트 통과</td><td><strong>AgentCore Browser</strong></td></tr><tr><td>예산 한도 + 만료</td><td><strong>PaymentSession</strong> (<code>maxSpendAmount</code>, currency, TTL)</td></tr><tr><td>감사 추적</td><td><strong>CloudWatch</strong> vended logs + <strong>X-Ray</strong> spans</td></tr></tbody></table>
+<p>편리하다. 하지만 바로 그 편리함 때문에 다음 부분이 중요하다.</p>
+<h2 id="part-2--실험-폭주하는-에이전트는-얼마를-태우나">Part 2 — 실험: 폭주하는 에이전트는 얼마를 태우나</h2>
+<p>에이전트는 비결정적이다. 루프에 빠지고, 프롬프트 인젝션을 당한다. 그래서 질문은 “결제가 되는가”가 아니라 “<strong>잘못됐을 때 얼마나 나쁜가</strong>”다. 같은 버그 걸린 에이전트를, $0.001 엔드포인트에 100번 호출하는 루프에 넣고, 두 가지 방식으로 돌렸다.</p>
+<h3 id="예산-가드가-없을-때">예산 가드가 없을 때</h3>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">for</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> _ </span><span style="color:#D73A49;--shiki-dark:#F97583">in</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> range</span><span style="color:#24292E;--shiki-dark:#E1E4E8">(</span><span style="color:#005CC5;--shiki-dark:#79B8FF">100</span><span style="color:#24292E;--shiki-dark:#E1E4E8">):</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    call_paid_api(merchant, wallet, </span><span style="color:#E36209;--shiki-dark:#FFAB70">session</span><span style="color:#D73A49;--shiki-dark:#F97583">=</span><span style="color:#005CC5;--shiki-dark:#79B8FF">None</span><span style="color:#24292E;--shiki-dark:#E1E4E8">)   </span><span style="color:#6A737D;--shiki-dark:#6A737D"># PAYG: 한도 없음</span></span></code></pre>
+<p>결과: <strong>100번 전부 결제. $0.10 소진, 아무것도 못 막는다.</strong> $0.001이면 푼돈이지만, 핵심은 단가가 아니라 루프다. 그래서 처리량(throughput)을 봐야 한다.</p>
+<h3 id="사람이-보고-막으면-된다는-통제가-아니다">”사람이 보고 막으면 된다”는 통제가 아니다</h3>
+<p>전체 핸드셰이크(챌린지 → Ed25519 서명 → 검증)가 얼마나 빨리 도는지 측정했다:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>M 시리즈 노트북에서 초당 3,497건 결제</span></span>
+<span class="line"><span>= $0.001/건 기준 분당 $209.79 의 자율 지출</span></span></code></pre>
+<p>사람은 여기에 반응할 수 없다. 이 문단을 읽는 사이에, 가드 없는 루프는 당신 커피값보다 많이 썼다. 에이전트가 초당 3,500번 거래하는데 “모니터링하겠다”는 건 안전장치가 아니다.</p>
+<h3 id="예산-가드가-있을-때">예산 가드가 있을 때</h3>
+<p>가드는 402를 받은 <em>다음</em>, 서명하기 <em>전</em>에 끼어든다 — 이게 거버넌스의 핵심 레버다:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#D73A49;--shiki-dark:#F97583">if</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> session </span><span style="color:#D73A49;--shiki-dark:#F97583">is</span><span style="color:#D73A49;--shiki-dark:#F97583"> not</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> None</span><span style="color:#24292E;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#24292E;--shiki-dark:#E1E4E8">    reserved </span><span style="color:#D73A49;--shiki-dark:#F97583">=</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> session.authorize(amount)   </span><span style="color:#6A737D;--shiki-dark:#6A737D"># BudgetExceeded 발생 → 결제 서명 자체가 안 됨</span></span></code></pre>
+<p>같은 100번 루프, $0.05 한도:</p>
 
 
 
@@ -95,50 +119,64 @@
 
 
 
-<table><thead><tr><th>구성요소</th><th>역할</th></tr></thead><tbody><tr><td><strong>x402 프로토콜</strong></td><td>HTTP 402 기반 결제 오케스트레이션 엔진</td></tr><tr><td><strong>CDP / Privy 지갑</strong></td><td>스테이블코인 결제 실행</td></tr><tr><td><strong>AgentCore Identity</strong></td><td>지갑 자격증명 보관 + 접근 제한</td></tr><tr><td><strong>AgentCore Gateway</strong></td><td>유료 MCP/엔드포인트 연결 (x402 Bazaar 포함)</td></tr><tr><td><strong>AgentCore Browser</strong></td><td>x402 지원 페이월 사이트 자율 접근</td></tr><tr><td><strong>PaymentSession</strong></td><td>예산 한도·만료 통제</td></tr><tr><td><strong>CloudWatch / X-Ray</strong></td><td>전 구간 관측가능성</td></tr></tbody></table>
-<p>대표 유스케이스로 AWS가 든 것: 예산 내에서 유료 데이터 소스를 사는 <strong>리서치 에이전트</strong>, 실시간 시장 데이터를 사는 <strong>금융 분석 에이전트</strong>, 페이월을 넘는 <strong>브라우저 에이전트</strong>, 토큰 사용량만큼만 모델에 지불하는 <strong>pay-per-intelligence</strong>, 온디맨드 스토리지 등입니다.</p>
-<hr>
-<h2 id="part-2-전략--에이전트-경제가-엔터프라이즈에-의미하는-것">Part 2. 전략 — ‘에이전트 경제’가 엔터프라이즈에 의미하는 것</h2>
-<p>기술은 깔끔합니다. 진짜 어려운 질문은 여기서 시작됩니다.</p>
-<h3 id="패러다임-전환-비용-센터에서-자율-지출-주체로">패러다임 전환: 비용 센터에서 자율 지출 주체로</h3>
-<p>지금까지 엔터프라이즈에서 클라우드 지출은 <strong>사람이 승인한 예산</strong>을 <strong>사람이 만든 시스템</strong>이 소비하는 구조였습니다. AgentCore Payments는 이 사슬에서 사람을 뺍니다. 에이전트가 실행 도중에 <strong>스스로 판단해서 돈을 씁니다.</strong></p>
-<p>이건 세 가지를 동시에 바꿉니다:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>모드</th><th>결제</th><th>소진</th><th>멈춘 지점</th></tr></thead><tbody><tr><td>가드 없음</td><td>100 / 100</td><td>$0.100</td><td>안 멈춤</td></tr><tr><td>예산 가드 ($0.05)</td><td>50</td><td>$0.050</td><td><strong>51번째 호출</strong></td></tr></tbody></table>
+<h3 id="예상-못-한-발견-예산만으로는-부족하다">예상 못 한 발견: 예산만으로는 부족하다</h3>
+<p>세 번째 실험을 추가했다 — <strong>$999 예산</strong>(사실상 무제한)이지만 20번 시도 후 만료되는 세션:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>모드</th><th>결제</th><th>멈춘 지점</th></tr></thead><tbody><tr><td>TTL 가드 ($999 예산, 20회 TTL)</td><td>20</td><td><strong>21번째, <em>시간</em>으로</strong></td></tr></tbody></table>
+<p>어떤 단일 예산 밑으로 천천히 흘리는 에이전트는 영원히 돌 수 있다. 돈은 <em>금액</em>을 막고, TTL만이 <em>지속 시간</em>을 막는다. <strong>둘 다 필요하다</strong> — AgentCore의 PaymentSession이 <code>maxSpendAmount</code>와 만료를 <em>둘 다</em> 가진 게 바로 이 이유다. 이제 그 이유를 안다. 만료가 막으려는 실패 모드를 직접 봤으니까.</p>
+<h3 id="aws가-문서에-적은-엣지-케이스--왜-무는가">AWS가 문서에 적은 엣지 케이스 — 왜 무는가</h3>
+<p>AWS 문서엔 이런 주석이 있다: 예산 차감 <em>후</em> 서명이 실패하면, 예산은 차감되지 않는다. 각주처럼 보인다. 아니다. 이 환불이 없으면, 일시적 실패가 매번 예산을 영구히 태우고, 불안정한 엔드포인트가 에이전트를 서서히 굶긴다. 내 가드는 이걸 구현했고, 테스트가 중간 실패에도 지출이 정확함을 증명한다:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>5번 시도, 1번이 예약 후 실패 → 5가 아닌 4건만 차감 ✓</span></span></code></pre>
+<h2 id="part-3--엔터프라이즈에-의미하는-것">Part 3 — 엔터프라이즈에 의미하는 것</h2>
+<p>전환을 분명히 말하면: 클라우드 지출은 원래 <strong>사람이 승인한 예산을, 사람이 만든 시스템이 소비</strong>하는 구조였다. AgentCore Payments는 사람을 사슬에서 뺀다. 에이전트가 실행 도중, 초당 3,500번, 스스로 판단해 쓴다.</p>
+<p>이게 세 가지를 동시에 바꾼다:</p>
 <ol>
-<li>
-<p><strong>재무(FinOps)</strong>: “이 워크로드가 이번 달에 얼마 쓸까”가 더 이상 결정론적이지 않습니다. 비결정적 에이전트가 비결정적으로 지출합니다. 예산은 <em>예측</em>에서 <em>실시간 통제</em>의 문제가 됩니다.</p>
-</li>
-<li>
-<p><strong>보안/신원</strong>: 에이전트가 지갑을 들고 다닙니다. 탈취된 에이전트, 프롬프트 인젝션된 에이전트는 이제 데이터 유출만이 아니라 <strong>금전적 손실</strong>을 일으킵니다. 공격 표면이 바뀝니다.</p>
-</li>
-<li>
-<p><strong>거버넌스/규제</strong>: “누가 이 돈을 쓰기로 결정했는가”에 대한 답이 “AI가요”가 됩니다. 감사, 책임소재, 규제 준수(특히 금융권)의 근본 질문이 새로 열립니다.</p>
-</li>
+<li><strong>FinOps</strong>는 예측이 아니라 실시간 통제가 된다. “이번 달에 얼마 쓸까”는 더 이상 예측 가능한 숫자가 아니라, 강제해야 하는 한도다.</li>
+<li><strong>보안</strong>에 돈의 차원이 생긴다. 프롬프트 인젝션된 에이전트는 이제 데이터만 새는 게 아니라 돈을 쓴다. Part 1의 그 서명이, 공격자가 당신 에이전트에게 만들게 유도할 바로 그 산출물이다.</li>
+<li><strong>거버넌스</strong>는 “누가 이 돈을 쓰기로 했나”에 “AI가, 이 한도 안에서, 그리고 여기 감사 추적이 있다”로 답해야 한다. 한도와 추적을 못 내놓으면, 준비가 안 된 거다.</li>
 </ol>
-<h3 id="왜-지금-이-주제를-다뤄야-하는가">왜 지금 이 주제를 다뤄야 하는가</h3>
-<p>대부분의 조직은 아직 “에이전트가 <em>말하게</em> 하는 것”도 production화 못 했습니다. 그런데 인프라는 이미 “에이전트가 <em>돈 쓰게</em> 하는 것”으로 넘어갔습니다. 이 <strong>간극</strong>이 바로 컨설턴트와 아키텍트가 가치를 만드는 지점입니다.</p>
-<p>데모는 누구나 5분이면 만듭니다. 하지만 “당신의 에이전트가 폭주해서 한 시간에 1만 달러를 쓰면 누가 책임지는가”라는 질문에 답할 수 있는 사람은 드뭅니다. <strong>production reality는 항상 데모보다 1년 앞서 고민해야 합니다.</strong></p>
-<hr>
-<h2 id="part-3-그래서-commerce-에이전트의-거버넌스는">Part 3. 그래서, commerce 에이전트의 거버넌스는?</h2>
-<p>이게 제가 이 글에 이어 별도로 정리한 주제입니다. 핵심 질문 5가지만 미리 던져두면:</p>
-<ol>
-<li><strong>예산 통제</strong> — 세션 한도만으로 충분한가? 일/월 누적 한도, 이상 지출 탐지는?</li>
-<li><strong>권한 최소화</strong> — 어떤 에이전트가 어떤 지갑에, 얼마까지 접근하는가? AgentCore Identity를 어떻게 설계하나?</li>
-<li><strong>감사 가능성</strong> — 모든 지출에 “왜 이걸 샀는가”의 추적이 남는가? CloudWatch 로그로 충분한가?</li>
-<li><strong>실패·폭주 대응</strong> — kill switch는? 프롬프트 인젝션으로 인한 악의적 지출을 어떻게 막나?</li>
-<li><strong>컴플라이언스</strong> — 금융·규제 산업에서 자율 결제가 허용되는가? human-in-the-loop는 언제 강제되어야 하나?</li>
-</ol>
-<p>이 다섯 가지를 영역별 체크리스트로 정리한 **‘Commerce Agent 거버넌스 프레임워크’**를 별도 문서로 만들었습니다. (→ <code>governance-checklist.md</code>)</p>
-<hr>
+<p>이 간극이 기회다. 대부분의 조직은 <em>말하는</em> 에이전트도 production화 못 했는데, 인프라는 이미 에이전트가 <em>돈 쓰게</em> 한다. “이걸 통제하면서 어떻게 하나”에 — 슬라이드가 아니라 실행 가능한 답으로 — 대답할 수 있는 사람이 신뢰를 얻는다.</p>
+<p>이 통제 질문들을, 같은 실험으로 뒷받침한 체크리스트로 정리했다. 후속 글 **<a href="/ko/writing/commerce-agent-governance/">Commerce Agent 거버넌스 프레임워크</a>**를 보라.</p>
 <h2 id="맺으며">맺으며</h2>
-<p>AWS는 방금 AI 에이전트에게 지갑을 줬습니다. 기술적으로는 우아하고, 마이크로트랜잭션이라는 진짜 문제를 풉니다. 하지만 엔터프라이즈에서 이걸 굴리려면, <strong>결제 기능을 켜기 전에 거버넌스를 먼저 설계해야</strong> 합니다.</p>
-<p>에이전트 경제는 시작됐습니다. 질문은 “할 수 있는가”가 아니라 **“통제하면서 할 수 있는가”**입니다.</p>
+<p>AWS는 에이전트에게 지갑을 줬고, 그 밑의 프로토콜은 정말로 우아하다. 하지만 “지갑 연결하고 한도 설정”이라는 말은, 부인 불가능한 서명 권한, 초당 3,500건의 지출 속도, 2차원 봉쇄 문제를 한 문장으로 압축한다. 옳은 선택은 두려워하는 게 아니라, <strong>가드를 설계하고 테스트한 뒤에야 결제를 켜는 것</strong>이다.</p>
+<p>에이전트 경제는 시작됐다. 질문은 “할 수 있는가”가 아니었다. “통제하면서 할 수 있는가”이고, 이건 측정 가능한 답이 있는 엔지니어링 질문이다.</p>
 <hr>
-<p><em>당신의 조직은 에이전트에게 어디까지 자율성을 줄 준비가 됐나요? 특히 ‘돈’에 관해서는요. 댓글로 의견 나눠주세요.</em></p>
+<p><em>코드: <a href="https://github.com/kimnamu/x402-lab">github.com/kimnamu/x402-lab</a> — 클론해서 <code>experiment.py</code>를 돌리면 당신의 숫자가 나온다. 당신 조직은 에이전트에게 어디까지 돈을 맡길 준비가 됐나? 진심으로 궁금하다.</em></p>
 <hr>
 <h3 id="참고-검증된-출처-2026년-5월-기준">참고 (검증된 출처, 2026년 5월 기준)</h3>
 <ul>
-<li>AWS News Blog, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments, Agent Toolkit for AWS, and more” (2026-05-11)</li>
-<li>AWS 공식 문서, “Amazon Bedrock AgentCore payments” (Bedrock AgentCore Developer Guide)</li>
-<li>x402.org / github.com/coinbase/x402</li>
+<li>AWS 공식 문서, “Amazon Bedrock AgentCore payments” (Developer Guide) — PaymentSession, x402, CDP/Privy 지갑, Identity, 관측가능성</li>
+<li>AWS News Blog, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments…” (2026-05-11)</li>
+<li>x402 프로토콜 — x402.org / github.com/coinbase/x402</li>
 </ul> </div> </article>  </div> </main> <footer class="site-footer"> <div class="wrap"> <span>본 글의 견해는 개인 의견이며 고용주를 대변하지 않습니다.</span> <span class="footer-links"> <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/kimnamu" target="_blank" rel="noopener">GitHub</a>  <a href="/rss.xml">RSS</a> </span> </div> </footer> <p style="text-align:center;font-size:0.75rem;color:var(--fg-faint);padding-bottom:1.5rem;margin:0;">
 © 2026 Jihoon Kim </p> </body></html>

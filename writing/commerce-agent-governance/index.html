@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>A Commerce Agent Governance Framework — Backed by Measurements, Not Bullet Points — Jihoon Kim</title><meta name="description" content="Six governance domains to check before you let an agent pay autonomously. Each claim is backed by numbers from a runaway-spend experiment I built on a from-scratch x402 implementation."><link rel="canonical" href="https://kimnamu.github.io/writing/commerce-agent-governance/"><meta name="generator" content="Astro v5.18.2"><!-- Open Graph --><meta property="og:type" content="website"><meta property="og:title" content="A Commerce Agent Governance Framework — Backed by Measurements, Not Bullet Points — Jihoon Kim"><meta property="og:description" content="Six governance domains to check before you let an agent pay autonomously. Each claim is backed by numbers from a runaway-spend experiment I built on a from-scratch x402 implementation."><meta property="og:url" content="https://kimnamu.github.io/writing/commerce-agent-governance/"><meta name="twitter:card" content="summary_large_image"><link rel="alternate" type="application/rss+xml" title="Jihoon Kim" href="/rss.xml"><!-- Apply theme before first paint to avoid flash --><script>
+      (() => {
+        const saved = localStorage.getItem('theme');
+        const dark = saved
+          ? saved === 'dark'
+          : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script><link rel="stylesheet" href="/_astro/about.C3RN7tdS.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/" aria-current="page">Writing</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/" title="한국어">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
+  // Theme toggle — persisted in localStorage, applied before paint in BaseLayout.
+  const btn = document.getElementById('theme-toggle');
+  const apply = (dark) => {
+    document.documentElement.classList.toggle('dark', dark);
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
+  };
+  btn?.addEventListener('click', () => {
+    apply(!document.documentElement.classList.contains('dark'));
+  });
+</script> <main> <div class="wrap">  <a class="back-link" href="/writing/">← All writing</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">May 30, 2026</time> <span>·</span> <span>7 min read</span> </div> <h1>A Commerce Agent Governance Framework — Backed by Measurements, Not Bullet Points</h1> <div class="post-meta"> <span class="tag">#Governance</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#FinOps</span> </div> </header> <div class="prose"> <blockquote>
+<p>A governance checklist for the era where agents pay on their own (à la AgentCore Payments, previewed May 2026). To avoid the usual hand-waving, I <strong>implemented the x402 protocol and a budget guard from scratch and ran a runaway-spend experiment</strong> (<a href="https://github.com/kimnamu/x402-lab">code</a>). Every core claim below carries the number it produced.</p>
+<p><em>Views are my own. Preview features may change before GA. The experiment models the x402 protocol; settlement is mocked.</em></p>
+</blockquote>
+<hr>
+<h2 id="why-you-can-trust-this-checklist">Why you can trust this checklist</h2>
+<p>Most AI governance writing drifts into generalities — “have a kill switch,” “keep an audit log.” True, but weightless: it never shows <em>why</em>. So in the <a href="/writing/agentcore-payments/">companion piece</a> I built the payment flow and measured the failure modes. The numbers here come from that experiment. Environment: M-series laptop, Python 3.14, full x402 handshake (challenge → Ed25519 sign → verify).</p>
+<p>Three measurements to pin down first — every domain below references them:</p>
+<ul>
+<li><strong>Speed</strong>: an unguarded payment loop runs at <strong>3,497 payments/sec = $209/min</strong> of autonomous spend (at $0.001/call)</li>
+<li><strong>Containment</strong>: a $0.05 cap stops a 100-call runaway at <strong>call #51</strong>. With a $999 budget, a 20-attempt TTL still stops it at <strong>call #21</strong>, on <em>time</em></li>
+<li><strong>Correctness</strong>: a payment that fails after reservation is refunded (1 of 5 fails → only 4 charged)</li>
+</ul>
+<hr>
+<h2 id="maturity-levels">Maturity levels</h2>
+<ul>
+<li><strong>L1 (experiment)</strong>: demo/PoC. A limit is enough.</li>
+<li><strong>L2 (limited prod)</strong>: internal users, low amounts. Audit + observability required.</li>
+<li><strong>L3 (enterprise/regulated)</strong>: external, high-value, regulated. All domains + human-in-the-loop.</li>
+</ul>
+<hr>
+<h2 id="domain-1--budget-control">Domain 1. 💰 Budget control</h2>
+<p><strong>Core question: is loss bounded even when the agent runs away?</strong></p>
+<blockquote>
+<p><strong>Evidence</strong>: 100-call loop, no guard → all 100 paid. With a $0.05 cap → stopped at exactly call #51, capped at $0.05. A limit works only if it blocks <em>before signing</em>, not as a setting read after the fact.</p>
+</blockquote>
+<ul>
+<li>⬜ Every payment is scoped to a <strong>PaymentSession</strong> with <code>maxSpendAmount</code> and expiry</li>
+<li>⬜ Limits set at <strong>both user and agent levels</strong></li>
+<li>⬜ A <strong>daily/weekly/monthly cumulative cap</strong> above the session limit</li>
+<li>⬜ A per-transaction maximum</li>
+<li>⬜ <strong>Anomaly detection</strong> — auto-block on an N× spike</li>
+<li>⬜ You’ve <strong>tested that the limit actually denies</strong>, not just that it’s set</li>
+</ul>
+<p><strong>AgentCore mapping</strong>: PaymentSession’s <code>maxSpendAmount</code>/expiry is the first line. Cumulative caps and anomaly detection are your layer (CloudWatch metrics + alarms).</p>
+<p><strong>🚩 Red flag</strong>: relying on a single session limit → defenseless against an attack/bug that rapidly creates new sessions. (In my experiment, a fresh session resets the cap — without a cumulative cap, a runaway routes around the limit.)</p>
+<hr>
+<h2 id="domain-2-️-time-control-ttl--the-one-people-forget">Domain 2. ⏱️ Time control (TTL) — the one people forget</h2>
+<p><strong>Core question: can you bound <em>duration</em>, not just amount?</strong></p>
+<blockquote>
+<p><strong>Evidence</strong>: with a $999 (effectively unlimited) budget and a 20-attempt TTL → stopped at call #21. <strong>The budget never bound it.</strong> An agent that slow-drips under any single budget runs forever. Money caps amount; only a TTL caps time.</p>
+</blockquote>
+<ul>
+<li>⬜ Every session has an <strong>expiry</strong></li>
+<li>⬜ Expiry works <strong>independently of budget</strong> (stops on time even with budget left)</li>
+<li>⬜ Long-running agents (frontier-agent style) have a <strong>max runtime</strong></li>
+<li>⬜ Session renewal isn’t infinitely automatic</li>
+</ul>
+<p><strong>AgentCore mapping</strong>: PaymentSession has <em>both</em> <code>maxSpendAmount</code> and expiry for exactly this reason. Use one and you’ve covered half the problem.</p>
+<p><strong>🚩 Red flag</strong>: budget set, no expiry → defenseless against slow-drip runaway. (This is where most “we set a limit” claims fail.)</p>
+<hr>
+<h2 id="domain-3--least-privilege--identity">Domain 3. 🔐 Least privilege &#x26; identity</h2>
+<p><strong>Core question: is a hijacked agent’s max blast radius minimized?</strong></p>
+<blockquote>
+<p><strong>Evidence</strong>: a payment signature is a non-repudiable authorization (companion piece, Part 1 — I confirmed in code that tampering with the amount fails verification). So any agent with wallet-key access holds that much spending authority. Separating keys is separating blast radius.</p>
+</blockquote>
+<ul>
+<li>⬜ Wallet credentials in <strong>AgentCore Identity</strong>, not code/env vars</li>
+<li>⬜ Explicitly restrict <strong>which agent accesses which wallet</strong></li>
+<li>⬜ <strong>Separate wallets/limits per agent</strong> (a shared wallet is a single point of failure)</li>
+<li>⬜ High-value vs low-value wallets <strong>separated</strong> (hot/cold)</li>
+<li>⬜ Credential <strong>rotation</strong> policy</li>
+<li>⬜ Reachable merchants restricted by <strong>allowlist</strong> (not all 10,000 x402 Bazaar endpoints)</li>
+</ul>
+<p><strong>AgentCore mapping</strong>: AgentCore Identity stores credentials via PaymentCredentialProvider and enforces least privilege. Pin reachable endpoints as Gateway targets.</p>
+<p><strong>🚩 Red flag</strong>: one wallet shared across agents → one compromise exposes all funds.</p>
+<hr>
+<h2 id="domain-4--auditability">Domain 4. 📜 Auditability</h2>
+<p><strong>Core question: can you answer “why was this spent” after the fact?</strong></p>
+<blockquote>
+<p><strong>Evidence</strong>: at 3,500/sec (Domain 6), after-the-fact tracing is the only realistic control. Humans can’t follow in real time, so if “what and why” isn’t recorded, post-incident reconstruction is impossible.</p>
+</blockquote>
+<ul>
+<li>⬜ <strong>CloudWatch logs</strong> (vended) on every payment</li>
+<li>⬜ <strong>X-Ray traces</strong> across the full payment lifecycle</li>
+<li>⬜ Each spend linked to the <strong>triggering user intent</strong></li>
+<li>⬜ Logs in <strong>immutable</strong> storage</li>
+<li>⬜ Per-transaction <strong>cryptographic proof</strong> and nonce preserved (for replay disputes)</li>
+<li>⬜ Extractable in <strong>regulator-submission format</strong> (L3)</li>
+</ul>
+<p><strong>AgentCore mapping</strong>: CloudWatch vended logs + X-Ray vended spans auto-emit on every data-plane call. The “intent → spend” link needs you to correlate agent traces with payment traces.</p>
+<p><strong>🚩 Red flag</strong>: logging only amount and timestamp → can’t explain “why,” which fails regulated industries.</p>
+<hr>
+<h2 id="domain-5--failure--runaway-containment">Domain 5. 🛑 Failure &#x26; runaway containment</h2>
+<p><strong>Core question: can you stop it at the worst moment?</strong></p>
+<blockquote>
+<p><strong>Evidence</strong>: I tested whether a failed payment wrongly burns budget. Corrupted the 3rd of 5 signatures → the refund path charged only 4 ($0.004), not the failed one. Without that refund, a flaky endpoint slowly starves the agent’s budget.</p>
+</blockquote>
+<ul>
+<li>⬜ <strong>Kill switch</strong> — a single control that halts all agent spend instantly</li>
+<li>⬜ Threat-modeled <strong>prompt-injection-induced</strong> malicious spend</li>
+<li>⬜ Block <strong>cyclic transactions / loop runaway</strong> between agents</li>
+<li>⬜ Backoff to prevent <strong>retry storms</strong> on payment failure</li>
+<li>⬜ Verified that failed payments <strong>aren’t wrongly charged</strong></li>
+<li>⬜ <strong>Rate limit</strong> — max transactions per unit time (recall the 3,500/s from Domain 6)</li>
+</ul>
+<p><strong>AgentCore mapping</strong>: session expiry/limit is the baseline. AgentCore doesn’t charge on signing failure (the behavior I verified). Kill switch and loop detection are yours to build.</p>
+<p><strong>🚩 Red flag</strong>: no instant answer to “how do you stop a runaway?” → not production-ready.</p>
+<hr>
+<h2 id="domain-6--testing--observability">Domain 6. 🧪 Testing &#x26; observability</h2>
+<p><strong>Core question: have you proven governance actually works before shipping?</strong></p>
+<blockquote>
+<p><strong>Evidence</strong>: the handshake runs at <strong>3,497/sec</strong>. At that speed “a human monitors it” is not a control — nobody catches $209/min. So controls must be <em>automated</em> and <em>tested</em> in advance. I pinned 7 governance rules as tests and confirmed 7/7 passing.</p>
+</blockquote>
+<ul>
+<li>⬜ Tested that exceeding the limit <strong>actually denies</strong></li>
+<li>⬜ Drilled that the kill switch <strong>actually stops instantly</strong></li>
+<li>⬜ Simulated runaway with <strong>chaos testing</strong></li>
+<li>⬜ Spend-pattern <strong>dashboard</strong> exposed to ops</li>
+<li>⬜ Alarm thresholds + <strong>on-call</strong> wired up</li>
+<li>⬜ <strong>Regression tests</strong> on the governance rules themselves (re-verify on model swap)</li>
+</ul>
+<p><strong>AgentCore mapping</strong>: CloudWatch metrics for success rate and spend patterns. AgentCore dataset management (May 2026) lets you build agent-behavior regression tests.</p>
+<p><strong>🚩 Red flag</strong>: governance rules set but never tested for actual denial → the most common production incident.</p>
+<hr>
+<h2 id="one-glance-summary-minimums-by-maturity">One-glance summary: minimums by maturity</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Domain</th><th>L1 experiment</th><th>L2 limited prod</th><th>L3 enterprise/regulated</th></tr></thead><tbody><tr><td>1. Budget</td><td>session limit</td><td>+ cumulative cap</td><td>+ anomaly detection</td></tr><tr><td>2. Time</td><td>—</td><td>TTL required</td><td>+ max runtime</td></tr><tr><td>3. Privilege</td><td>single wallet OK</td><td>per-agent separation</td><td>hot/cold + rotation</td></tr><tr><td>4. Audit</td><td>basic logs</td><td>intent→spend link</td><td>regulator format</td></tr><tr><td>5. Runaway</td><td>—</td><td>kill switch</td><td>+ loop/injection defense</td></tr><tr><td>6. Testing</td><td>—</td><td>limit tests</td><td>chaos + regression</td></tr></tbody></table>
+<hr>
+<h2 id="closing--governance-first">Closing — governance first</h2>
+<blockquote>
+<p><strong>Design and test governance before you turn payments on.</strong></p>
+</blockquote>
+<p>AgentCore Payments lets you attach payments “in a few lines of code.” That ease is the risk. With the technical barrier gone, differentiation and safety come entirely from your <strong>governance design and verification</strong>.</p>
+<p>And now that capability is provable in numbers, not words. I measured the runaway, watched the guard stop at #51, watched the TTL stop on time, watched the refund protect the budget. You can get your own numbers from the <a href="https://github.com/kimnamu/x402-lab">same code</a>.</p>
+<p>The winner in the agent economy isn’t the org that gave agents money first — it’s the one that <strong>measured how to give them money under control</strong>.</p>
+<hr>
+<h3 id="references-verified-as-of-may-2026">References (verified, as of May 2026)</h3>
+<ul>
+<li>Experiment code — <a href="https://github.com/kimnamu/x402-lab">github.com/kimnamu/x402-lab</a></li>
+<li>AWS Documentation, “Amazon Bedrock AgentCore payments” (Developer Guide)</li>
+<li>AWS News Blog, “AWS Weekly Roundup … AgentCore payments” (2026-05-11)</li>
+<li>x402 protocol — x402.org / github.com/coinbase/x402</li>
+</ul> </div> </article>  </div> </main> <footer class="site-footer"> <div class="wrap"> <span>Views are my own and do not represent my employer.</span> <span class="footer-links"> <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/kimnamu" target="_blank" rel="noopener">GitHub</a>  <a href="/rss.xml">RSS</a> </span> </div> </footer> <p style="text-align:center;font-size:0.75rem;color:var(--fg-faint);padding-bottom:1.5rem;margin:0;">
+© 2026 Jihoon Kim </p> </body></html>
