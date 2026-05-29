@@ -6,7 +6,7 @@
           : window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (dark) document.documentElement.classList.add('dark');
       })();
-    </script><link rel="stylesheet" href="/_astro/about.DCIwUqCp.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/">Writing</a> <a href="/tags/" aria-current="page">Tags</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/" title="한국어">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
+    </script><link rel="stylesheet" href="/_astro/about.C3C8hI_W.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/">Writing</a> <a href="/tags/" aria-current="page">Tags</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/" title="한국어" data-lang-switch="ko">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
   // Theme toggle — persisted in localStorage, applied before paint in BaseLayout.
   const btn = document.getElementById('theme-toggle');
   const apply = (dark) => {
@@ -16,5 +16,14 @@
   btn?.addEventListener('click', () => {
     apply(!document.documentElement.classList.contains('dark'));
   });
+
+  // Record an EXPLICIT language choice only when the user clicks the toggle.
+  // (We intentionally do NOT auto-save the current language — otherwise simply
+  // landing on the EN root would lock in English and defeat the auto-redirect.)
+  try {
+    document.querySelector('[data-lang-switch]')?.addEventListener('click', (e) => {
+      localStorage.setItem('lang', e.currentTarget.getAttribute('data-lang-switch'));
+    });
+  } catch (e) { /* storage blocked */ }
 </script> <main> <div class="wrap">  <section class="hero"> <h1>All tags</h1> </section> <ul class="tag-cloud"> <li> <a href="/tags/agentcore/">#AgentCore <span class="tag-count">2</span></a> </li><li> <a href="/tags/agentic-ai/">#Agentic AI <span class="tag-count">2</span></a> </li><li> <a href="/tags/aws/">#AWS <span class="tag-count">1</span></a> </li><li> <a href="/tags/finops/">#FinOps <span class="tag-count">1</span></a> </li><li> <a href="/tags/governance/">#Governance <span class="tag-count">1</span></a> </li><li> <a href="/tags/x402/">#x402 <span class="tag-count">1</span></a> </li> </ul>  </div> </main> <footer class="site-footer"> <div class="wrap"> <span>Views are my own and do not represent my employer.</span> <span class="footer-links"> <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/kimnamu" target="_blank" rel="noopener">GitHub</a>  <a href="/rss.xml">RSS</a> </span> </div> </footer> <p style="text-align:center;font-size:0.75rem;color:var(--fg-faint);padding-bottom:1.5rem;margin:0;">
 © 2026 Jihoon Kim </p> </body></html>

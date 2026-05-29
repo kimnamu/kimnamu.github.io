@@ -6,7 +6,7 @@
           : window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (dark) document.documentElement.classList.add('dark');
       })();
-    </script><link rel="stylesheet" href="/_astro/about.DCIwUqCp.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/" aria-current="page">Writing</a> <a href="/tags/">Tags</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/writing/agentcore-payments/" title="한국어">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
+    </script><link rel="stylesheet" href="/_astro/about.C3C8hI_W.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/" aria-current="page">Writing</a> <a href="/tags/">Tags</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/writing/agentcore-payments/" title="한국어" data-lang-switch="ko">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
   // Theme toggle — persisted in localStorage, applied before paint in BaseLayout.
   const btn = document.getElementById('theme-toggle');
   const apply = (dark) => {
@@ -16,6 +16,15 @@
   btn?.addEventListener('click', () => {
     apply(!document.documentElement.classList.contains('dark'));
   });
+
+  // Record an EXPLICIT language choice only when the user clicks the toggle.
+  // (We intentionally do NOT auto-save the current language — otherwise simply
+  // landing on the EN root would lock in English and defeat the auto-redirect.)
+  try {
+    document.querySelector('[data-lang-switch]')?.addEventListener('click', (e) => {
+      localStorage.setItem('lang', e.currentTarget.getAttribute('data-lang-switch'));
+    });
+  } catch (e) { /* storage blocked */ }
 </script> <main> <div class="wrap">  <a class="back-link" href="/writing/">← All writing</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">May 30, 2026</time> <span>·</span> <span>8 min read</span> </div> <h1>I Implemented the Protocol Behind AgentCore Payments — Here&#39;s What the Managed Service Hides</h1> <div class="post-meta"> <a class="tag" href="/tags/aws/">#AWS</a><a class="tag" href="/tags/agentcore/">#AgentCore</a><a class="tag" href="/tags/agentic-ai/">#Agentic AI</a><a class="tag" href="/tags/x402/">#x402</a> </div> </header> <div class="prose"> <blockquote>
 <p><em>AWS previewed a capability that lets AI agents spend money on their own. The demos look magical. So I rebuilt the protocol underneath it from scratch — real cryptographic signing, a budget guard, a runaway-spend experiment — to find out what you actually sign up for when you “connect a wallet.” The code is <a href="https://github.com/kimnamu/x402-lab">on GitHub</a>; every number below comes from running it.</em></p>
 <p><em>(Views are my own. AgentCore Payments is in preview as of May 2026; APIs may change. My implementation models the open x402 protocol it uses — signing is real, settlement is mocked. No real funds move.)</em></p>

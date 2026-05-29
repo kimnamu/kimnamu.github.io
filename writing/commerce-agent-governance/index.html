@@ -6,7 +6,7 @@
           : window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (dark) document.documentElement.classList.add('dark');
       })();
-    </script><link rel="stylesheet" href="/_astro/about.DCIwUqCp.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/" aria-current="page">Writing</a> <a href="/tags/">Tags</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/writing/commerce-agent-governance/" title="한국어">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
+    </script><link rel="stylesheet" href="/_astro/about.C3C8hI_W.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/" aria-current="page">Writing</a> <a href="/tags/">Tags</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/writing/commerce-agent-governance/" title="한국어" data-lang-switch="ko">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
   // Theme toggle — persisted in localStorage, applied before paint in BaseLayout.
   const btn = document.getElementById('theme-toggle');
   const apply = (dark) => {
@@ -16,6 +16,15 @@
   btn?.addEventListener('click', () => {
     apply(!document.documentElement.classList.contains('dark'));
   });
+
+  // Record an EXPLICIT language choice only when the user clicks the toggle.
+  // (We intentionally do NOT auto-save the current language — otherwise simply
+  // landing on the EN root would lock in English and defeat the auto-redirect.)
+  try {
+    document.querySelector('[data-lang-switch]')?.addEventListener('click', (e) => {
+      localStorage.setItem('lang', e.currentTarget.getAttribute('data-lang-switch'));
+    });
+  } catch (e) { /* storage blocked */ }
 </script> <main> <div class="wrap">  <a class="back-link" href="/writing/">← All writing</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">May 30, 2026</time> <span>·</span> <span>7 min read</span> </div> <h1>A Commerce Agent Governance Framework — Backed by Measurements, Not Bullet Points</h1> <div class="post-meta"> <a class="tag" href="/tags/governance/">#Governance</a><a class="tag" href="/tags/agentcore/">#AgentCore</a><a class="tag" href="/tags/agentic-ai/">#Agentic AI</a><a class="tag" href="/tags/finops/">#FinOps</a> </div> </header> <div class="prose"> <blockquote>
 <p>A governance checklist for the era where agents pay on their own (à la AgentCore Payments, previewed May 2026). To avoid the usual hand-waving, I <strong>implemented the x402 protocol and a budget guard from scratch and ran a runaway-spend experiment</strong> (<a href="https://github.com/kimnamu/x402-lab">code</a>). Every core claim below carries the number it produced.</p>
 <p><em>Views are my own. Preview features may change before GA. The experiment models the x402 protocol; settlement is mocked.</em></p>
