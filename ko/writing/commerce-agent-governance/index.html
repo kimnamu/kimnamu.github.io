@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ko"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Commerce Agent 거버넌스 프레임워크 — 실측으로 뒷받침한 6개 영역 — Jihoon Kim</title><meta name="description" content="AI 에이전트가 자율 결제하는 시대, production 배포 전 점검할 6개 영역 체크리스트. 직접 구현한 x402 폭주 시뮬레이션의 실측 숫자로 각 항목을 뒷받침했다."><link rel="canonical" href="https://kimnamu.github.io/ko/writing/commerce-agent-governance/"><meta name="generator" content="Astro v5.18.2"><!-- Open Graph --><meta property="og:type" content="website"><meta property="og:title" content="Commerce Agent 거버넌스 프레임워크 — 실측으로 뒷받침한 6개 영역 — Jihoon Kim"><meta property="og:description" content="AI 에이전트가 자율 결제하는 시대, production 배포 전 점검할 6개 영역 체크리스트. 직접 구현한 x402 폭주 시뮬레이션의 실측 숫자로 각 항목을 뒷받침했다."><meta property="og:url" content="https://kimnamu.github.io/ko/writing/commerce-agent-governance/"><meta name="twitter:card" content="summary_large_image"><link rel="alternate" type="application/rss+xml" title="Jihoon Kim" href="/rss.xml"><link rel="alternate" hreflang="en" href="https://kimnamu.github.io/writing/commerce-agent-governance/"><!-- Apply theme before first paint to avoid flash --><script>
+<!DOCTYPE html><html lang="ko"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Commerce Agent 거버넌스 프레임워크, 실측으로 뒷받침한 6개 영역 · Jihoon Kim</title><meta name="description" content="AI 에이전트가 자율 결제하는 시대, production 배포 전 점검할 6개 영역 체크리스트. 직접 구현한 x402 폭주 시뮬레이션의 실측 숫자로 각 항목을 뒷받침했다."><link rel="canonical" href="https://kimnamu.github.io/ko/writing/commerce-agent-governance/"><meta name="generator" content="Astro v5.18.2"><!-- Open Graph --><meta property="og:type" content="website"><meta property="og:title" content="Commerce Agent 거버넌스 프레임워크, 실측으로 뒷받침한 6개 영역 · Jihoon Kim"><meta property="og:description" content="AI 에이전트가 자율 결제하는 시대, production 배포 전 점검할 6개 영역 체크리스트. 직접 구현한 x402 폭주 시뮬레이션의 실측 숫자로 각 항목을 뒷받침했다."><meta property="og:url" content="https://kimnamu.github.io/ko/writing/commerce-agent-governance/"><meta name="twitter:card" content="summary_large_image"><link rel="alternate" type="application/rss+xml" title="Jihoon Kim" href="/rss.xml"><link rel="alternate" hreflang="en" href="https://kimnamu.github.io/writing/commerce-agent-governance/"><!-- Apply theme before first paint to avoid flash --><script>
       (() => {
         const saved = localStorage.getItem('theme');
         const dark = saved
@@ -6,8 +6,8 @@
           : window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (dark) document.documentElement.classList.add('dark');
       })();
-    </script><link rel="stylesheet" href="/_astro/about.C3C8hI_W.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/ko/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/ko/">홈</a> <a href="/ko/writing/" aria-current="page">글</a> <a href="/ko/tags/">태그</a> <a href="/ko/about/">소개</a> <a class="icon-btn" href="/writing/commerce-agent-governance/" title="English" data-lang-switch="en">English</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
-  // Theme toggle — persisted in localStorage, applied before paint in BaseLayout.
+    </script><link rel="stylesheet" href="/_astro/index.C3C8hI_W.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/ko/"> Jihoon Kim <span class="role">AI/ML Engineer Consultant</span> </a> <nav class="nav"> <a href="/ko/writing/" aria-current="page">글</a> <a href="/ko/tags/">태그</a> <a class="icon-btn" href="/writing/commerce-agent-governance/" title="English" data-lang-switch="en">English</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
+  // Theme toggle, persisted in localStorage, applied before paint in BaseLayout.
   const btn = document.getElementById('theme-toggle');
   const apply = (dark) => {
     document.documentElement.classList.toggle('dark', dark);
@@ -18,21 +18,21 @@
   });
 
   // Record an EXPLICIT language choice only when the user clicks the toggle.
-  // (We intentionally do NOT auto-save the current language — otherwise simply
+  // (We intentionally do NOT auto-save the current language, otherwise simply
   // landing on the EN root would lock in English and defeat the auto-redirect.)
   try {
     document.querySelector('[data-lang-switch]')?.addEventListener('click', (e) => {
       localStorage.setItem('lang', e.currentTarget.getAttribute('data-lang-switch'));
     });
   } catch (e) { /* storage blocked */ }
-</script> <main> <div class="wrap">  <a class="back-link" href="/ko/writing/">← 전체 글</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">2026년 5월 30일</time> <span>·</span> <span>8 분 분량</span> </div> <h1>Commerce Agent 거버넌스 프레임워크 — 실측으로 뒷받침한 6개 영역</h1> <div class="post-meta"> <a class="tag" href="/ko/tags/거버넌스/">#거버넌스</a><a class="tag" href="/ko/tags/agentcore/">#AgentCore</a><a class="tag" href="/ko/tags/agentic-ai/">#Agentic AI</a><a class="tag" href="/ko/tags/finops/">#FinOps</a> </div> </header> <div class="prose"> <blockquote>
+</script> <main> <div class="wrap">  <a class="back-link" href="/ko/writing/">← 전체 글</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">2026년 5월 30일</time> <span>·</span> <span>8 분 분량</span> </div> <h1>Commerce Agent 거버넌스 프레임워크, 실측으로 뒷받침한 6개 영역</h1> <div class="post-meta"> <a class="tag" href="/ko/tags/거버넌스/">#거버넌스</a><a class="tag" href="/ko/tags/agentcore/">#AgentCore</a><a class="tag" href="/ko/tags/agentic-ai/">#Agentic AI</a><a class="tag" href="/ko/tags/finops/">#FinOps</a> </div> </header> <div class="prose"> <blockquote>
 <p>AgentCore Payments(2026년 5월 preview)처럼 에이전트가 자율 결제하는 시대에, production 배포 전 설계해야 할 거버넌스 체크리스트다. 일반론으로 끝내지 않으려고, 앞선 글에서 <strong>x402 프로토콜과 예산 가드를 직접 구현해 폭주 시뮬레이션을 돌렸다</strong>(<a href="https://github.com/kimnamu/x402-lab">코드</a>). 각 영역의 핵심 주장에는 그 실측 숫자를 붙였다.</p>
 <p><em>개인 의견. preview 기능은 GA 전 변경될 수 있다. 실험은 x402 프로토콜 모델 기준이며 settlement는 mock이다.</em></p>
 </blockquote>
 <hr>
 <h2 id="왜-이-글을-신뢰해도-되는가">왜 이 글을 신뢰해도 되는가</h2>
 <p>AI 거버넌스 글은 대개 “kill switch를 두라”, “감사 로그를 남겨라” 같은 일반론으로 흐른다. 맞는 말이지만, <em>왜</em> 그래야 하는지의 무게가 없다. 그래서 나는 <a href="/ko/writing/agentcore-payments/">동반 글</a>에서 결제 흐름을 직접 구현하고 폭주를 측정했다. 이 체크리스트의 숫자들은 그 실험에서 나왔다. 환경: M 시리즈 노트북, Python 3.14, x402 핸드셰이크(챌린지→Ed25519 서명→검증) 풀 사이클 기준.</p>
-<p>핵심 실측 3가지를 먼저 박아둔다 — 아래 전 영역이 이걸 참조한다:</p>
+<p>핵심 실측 3가지를 먼저 박아둔다, 아래 전 영역이 이걸 참조한다:</p>
 <ul>
 <li><strong>속도</strong>: 가드 없는 결제 루프는 <strong>초당 3,497건 = 분당 $209</strong> 자율 지출 (단가 $0.001 기준)</li>
 <li><strong>봉쇄</strong>: $0.05 한도는 100회 폭주를 <strong>51번째에서</strong> 차단. $999 예산이어도 20회 TTL은 <strong>21번째에서</strong> 시간으로 차단</li>
@@ -56,13 +56,13 @@
 <li>⬜ <strong>사용자 레벨</strong>과 <strong>에이전트 레벨</strong> 한도를 둘 다 설정했는가</li>
 <li>⬜ 세션 한도 위에 <strong>일/주/월 누적 한도</strong>가 있는가</li>
 <li>⬜ 단일 거래 최대액(per-transaction cap)이 있는가</li>
-<li>⬜ <strong>이상 지출 탐지</strong> — 평소보다 N배 급증 시 자동 차단</li>
+<li>⬜ <strong>이상 지출 탐지</strong>, 평소보다 N배 급증 시 자동 차단</li>
 <li>⬜ 한도가 “설정만” 된 게 아니라 <strong>실제로 거부되는지 테스트</strong>했는가</li>
 </ul>
 <p><strong>AgentCore 매핑</strong>: PaymentSession의 <code>maxSpendAmount</code>/expiry가 1차 방어선. 누적 한도·이상 탐지는 세션 위 레이어에서 직접 설계(CloudWatch 메트릭+알람).</p>
-<p><strong>🚩 레드플래그</strong>: 세션 한도 하나에만 의존 → 세션을 빠르게 반복 생성하는 공격/버그에 무방비. (내 실험에서 세션을 새로 만들면 한도가 리셋된다 — 누적 한도가 없으면 폭주가 한도를 우회한다.)</p>
+<p><strong>🚩 레드플래그</strong>: 세션 한도 하나에만 의존 → 세션을 빠르게 반복 생성하는 공격/버그에 무방비. (내 실험에서 세션을 새로 만들면 한도가 리셋된다, 누적 한도가 없으면 폭주가 한도를 우회한다.)</p>
 <hr>
-<h2 id="영역-2-️-시간-통제-time--ttl--흔히-빠뜨리는-것">영역 2. ⏱️ 시간 통제 (Time / TTL) — 흔히 빠뜨리는 것</h2>
+<h2 id="영역-2-️-시간-통제-time--ttl-흔히-빠뜨리는-것">영역 2. ⏱️ 시간 통제 (Time / TTL), 흔히 빠뜨리는 것</h2>
 <p><strong>핵심 질문: 금액이 아니라 <em>지속 시간</em>을 막을 수 있는가?</strong></p>
 <blockquote>
 <p><strong>실측 근거</strong>: 예산을 $999(사실상 무제한)로 두고 TTL만 20회로 설정 → 21번째에서 차단. <strong>예산이 한 번도 한계로 작동하지 않았다.</strong> 어떤 단일 예산 밑으로 천천히 흘리는 에이전트는 영원히 돈다. 돈은 금액을, TTL은 시간을 막는다.</p>
@@ -79,7 +79,7 @@
 <h2 id="영역-3--권한-최소화-least-privilege--identity">영역 3. 🔐 권한 최소화 (Least Privilege &#x26; Identity)</h2>
 <p><strong>핵심 질문: 탈취된 에이전트의 최대 피해가 최소인가?</strong></p>
 <blockquote>
-<p><strong>근거</strong>: 결제 서명은 부인 불가능한 권한이다(동반 글 Part 1 참고 — 금액 변조 시 검증 실패를 코드로 확인). 즉 지갑 키에 접근하는 에이전트는 곧 그만큼의 지출 권한을 쥔다. 키 분리가 곧 피해 분리다.</p>
+<p><strong>근거</strong>: 결제 서명은 부인 불가능한 권한이다(동반 글 Part 1 참고, 금액 변조 시 검증 실패를 코드로 확인). 즉 지갑 키에 접근하는 에이전트는 곧 그만큼의 지출 권한을 쥔다. 키 분리가 곧 피해 분리다.</p>
 </blockquote>
 <ul>
 <li>⬜ 지갑 자격증명이 코드/환경변수가 아니라 <strong>AgentCore Identity</strong>에 있는가</li>
@@ -114,12 +114,12 @@
 <p><strong>실측 근거</strong>: 결제 실패가 예산에 잘못 차감되는지 직접 테스트했다. 5회 시도 중 3번째 서명이 실패하도록 조작 → 환불 로직이 작동해 4건만 차감(<code>$0.004</code>), 실패분은 미차감. 이 환불이 없으면 불안정한 엔드포인트가 에이전트 예산을 서서히 고갈시킨다.</p>
 </blockquote>
 <ul>
-<li>⬜ <strong>Kill switch</strong> — 모든 에이전트 지출을 즉시 중단하는 단일 통제</li>
+<li>⬜ <strong>Kill switch</strong>, 모든 에이전트 지출을 즉시 중단하는 단일 통제</li>
 <li>⬜ <strong>프롬프트 인젝션</strong>으로 인한 악의적 지출을 위협 모델링했는가</li>
 <li>⬜ 에이전트 간 <strong>순환 거래/루프 폭주</strong>를 차단하는가</li>
 <li>⬜ 결제 실패 시 <strong>재시도 폭주</strong>를 막는 백오프가 있는가</li>
 <li>⬜ 실패한 결제가 예산에서 <strong>잘못 차감되지 않는지</strong> 검증했는가</li>
-<li>⬜ <strong>rate limit</strong> — 단위 시간당 최대 거래 건수 제한이 있는가 (영역 6의 3,500/s를 떠올려라)</li>
+<li>⬜ <strong>rate limit</strong>, 단위 시간당 최대 거래 건수 제한이 있는가 (영역 6의 3,500/s를 떠올려라)</li>
 </ul>
 <p><strong>AgentCore 매핑</strong>: 세션 만료/한도가 기본 차단선. AgentCore는 서명 실패 시 예산 미차감(내가 검증한 그 동작). kill switch·루프 탐지는 직접 구현 영역.</p>
 <p><strong>🚩 레드플래그</strong>: “폭주하면 어떻게 멈추나?”에 즉답 못 한다 → production 금지.</p>
@@ -127,7 +127,7 @@
 <h2 id="영역-6--검증--관측-testing--observability">영역 6. 🧪 검증 &#x26; 관측 (Testing &#x26; Observability)</h2>
 <p><strong>핵심 질문: 배포 전에 거버넌스가 실제로 작동함을 증명했는가?</strong></p>
 <blockquote>
-<p><strong>실측 근거</strong>: 핸드셰이크가 <strong>초당 3,497건</strong>으로 돈다. 이 속도에서 “사람이 모니터링한다”는 통제가 아니다 — 분당 $209를 사람이 못 따라잡는다. 그래서 통제는 사전에 <em>자동화</em>되고 <em>테스트</em>돼 있어야 한다. 나는 거버넌스 규칙 7개를 테스트로 박아 7/7 통과를 확인했다.</p>
+<p><strong>실측 근거</strong>: 핸드셰이크가 <strong>초당 3,497건</strong>으로 돈다. 이 속도에서 “사람이 모니터링한다”는 통제가 아니다, 분당 $209를 사람이 못 따라잡는다. 그래서 통제는 사전에 <em>자동화</em>되고 <em>테스트</em>돼 있어야 한다. 나는 거버넌스 규칙 7개를 테스트로 박아 7/7 통과를 확인했다.</p>
 </blockquote>
 <ul>
 <li>⬜ 한도 초과 시 <strong>실제로 거부되는지</strong> 테스트했는가</li>
@@ -188,9 +188,9 @@
 
 
 
-<table><thead><tr><th>영역</th><th>L1 실험</th><th>L2 제한적 prod</th><th>L3 엔터프라이즈/규제</th></tr></thead><tbody><tr><td>1. 예산</td><td>세션 한도</td><td>+ 누적 한도</td><td>+ 이상 탐지</td></tr><tr><td>2. 시간</td><td>—</td><td>TTL 필수</td><td>+ 최대 실행시간</td></tr><tr><td>3. 권한</td><td>단일 지갑 OK</td><td>에이전트별 분리</td><td>hot/cold + 순환</td></tr><tr><td>4. 감사</td><td>기본 로그</td><td>의도-지출 연결</td><td>규제 제출 형식</td></tr><tr><td>5. 폭주</td><td>—</td><td>kill switch</td><td>+ 루프/인젝션 방어</td></tr><tr><td>6. 검증</td><td>—</td><td>한도 테스트</td><td>카오스 + 회귀</td></tr></tbody></table>
+<table><thead><tr><th>영역</th><th>L1 실험</th><th>L2 제한적 prod</th><th>L3 엔터프라이즈/규제</th></tr></thead><tbody><tr><td>1. 예산</td><td>세션 한도</td><td>+ 누적 한도</td><td>+ 이상 탐지</td></tr><tr><td>2. 시간</td><td>(없음)</td><td>TTL 필수</td><td>+ 최대 실행시간</td></tr><tr><td>3. 권한</td><td>단일 지갑 OK</td><td>에이전트별 분리</td><td>hot/cold + 순환</td></tr><tr><td>4. 감사</td><td>기본 로그</td><td>의도-지출 연결</td><td>규제 제출 형식</td></tr><tr><td>5. 폭주</td><td>(없음)</td><td>kill switch</td><td>+ 루프/인젝션 방어</td></tr><tr><td>6. 검증</td><td>(없음)</td><td>한도 테스트</td><td>카오스 + 회귀</td></tr></tbody></table>
 <hr>
-<h2 id="마치며--거버넌스-우선-원칙">마치며 — 거버넌스 우선 원칙</h2>
+<h2 id="마치며-거버넌스-우선-원칙">마치며, 거버넌스 우선 원칙</h2>
 <blockquote>
 <p><strong>결제 기능을 켜기 전에 거버넌스를 먼저 설계하고, 테스트하라.</strong></p>
 </blockquote>
@@ -204,6 +204,6 @@
 <li><strong>AgentCore Payments 공식 문서</strong>: <a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/payments.html">https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/payments.html</a></li>
 <li><strong>AWS News Blog</strong>, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments, Agent Toolkit for AWS, and more” (2026-05-11):
 <a href="https://aws.amazon.com/blogs/aws/aws-weekly-roundup-amazon-bedrock-agentcore-payments-agent-toolkit-for-aws-and-more-may-11-2026/">https://aws.amazon.com/blogs/aws/aws-weekly-roundup-amazon-bedrock-agentcore-payments-agent-toolkit-for-aws-and-more-may-11-2026/</a></li>
-<li><strong>x402 프로토콜</strong> — 공식 사이트: <a href="https://www.x402.org/">https://www.x402.org/</a> · 레퍼런스 구현: <a href="https://github.com/coinbase/x402">https://github.com/coinbase/x402</a></li>
-</ul> </div> </article>  </div> </main> <footer class="site-footer"> <div class="wrap"> <span>본 글의 견해는 개인 의견이며 고용주를 대변하지 않습니다.</span> <span class="footer-links"> <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/kimnamu" target="_blank" rel="noopener">GitHub</a>  <a href="/rss.xml">RSS</a> </span> </div> </footer> <p style="text-align:center;font-size:0.75rem;color:var(--fg-faint);padding-bottom:1.5rem;margin:0;">
+<li><strong>x402 프로토콜</strong>, 공식 사이트: <a href="https://www.x402.org/">https://www.x402.org/</a> · 레퍼런스 구현: <a href="https://github.com/coinbase/x402">https://github.com/coinbase/x402</a></li>
+</ul> </div> </article>  </div> </main> <footer class="site-footer"> <div class="wrap"> <span>모든 의견은 개인적인 견해입니다.</span> <span class="footer-links"> <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/kimnamu" target="_blank" rel="noopener">GitHub</a>  <a href="/rss.xml">RSS</a> </span> </div> </footer> <p style="text-align:center;font-size:0.75rem;color:var(--fg-faint);padding-bottom:1.5rem;margin:0;">
 © 2026 Jihoon Kim </p> </body></html>
