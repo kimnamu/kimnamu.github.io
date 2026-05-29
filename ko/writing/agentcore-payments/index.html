@@ -6,7 +6,7 @@
           : window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (dark) document.documentElement.classList.add('dark');
       })();
-    </script><link rel="stylesheet" href="/_astro/about.C3RN7tdS.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/ko/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/ko/">홈</a> <a href="/ko/writing/" aria-current="page">글</a> <a href="/ko/about/">소개</a> <a class="icon-btn" href="/" title="English">English</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
+    </script><link rel="stylesheet" href="/_astro/about.CBTwVB_a.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/ko/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/ko/">홈</a> <a href="/ko/writing/" aria-current="page">글</a> <a href="/ko/about/">소개</a> <a class="icon-btn" href="/" title="English">English</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
   // Theme toggle — persisted in localStorage, applied before paint in BaseLayout.
   const btn = document.getElementById('theme-toggle');
   const apply = (dark) => {
@@ -16,7 +16,7 @@
   btn?.addEventListener('click', () => {
     apply(!document.documentElement.classList.contains('dark'));
   });
-</script> <main> <div class="wrap">  <a class="back-link" href="/ko/writing/">← 전체 글</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">2026년 5월 30일</time> <span>·</span> <span>8 분 분량</span> </div> <h1>AgentCore Payments의 프로토콜을 직접 구현해봤다 — 관리형 서비스가 감추는 것</h1> <div class="post-meta"> <span class="tag">#AWS</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#x402</span> </div> </header> <div class="prose"> <blockquote>
+</script> <main> <div class="wrap">  <a class="back-link" href="/ko/writing/">← 전체 글</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">2026년 5월 30일</time> <span>·</span> <span>9 분 분량</span> </div> <h1>AgentCore Payments의 프로토콜을 직접 구현해봤다 — 관리형 서비스가 감추는 것</h1> <div class="post-meta"> <span class="tag">#AWS</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#x402</span> </div> </header> <div class="prose"> <blockquote>
 <p><em>AWS가 AI 에이전트에게 스스로 돈을 쓰게 하는 기능을 내놨다. 데모는 마법 같다. 그래서 나는 그 밑의 프로토콜을 직접 구현했다 — 실제 암호학적 서명, 예산 가드, 폭주 시뮬레이션. “지갑을 연결하라”가 실제로 무엇을 약속하는 건지 보려고. 코드는 <a href="https://github.com/kimnamu/x402-lab">GitHub</a>에 있고, 아래 모든 숫자는 그걸 실제로 돌려서 나온 값이다.</em></p>
 <p><em>(개인 의견. AgentCore Payments는 2026년 5월 기준 preview이며 API는 변경될 수 있다. 내 구현은 이 서비스가 쓰는 개방형 x402 프로토콜을 모델링한 것 — 서명은 실제, settlement는 mock이다. 실제 자금은 움직이지 않는다.)</em></p>
 </blockquote>
@@ -63,38 +63,20 @@
 <span class="line"><span>verify (금액 변조):    False</span></span></code></pre>
 <p>repo의 실제 테스트(<code>test_signature_tampering_rejected</code>)다. 다이어그램이 아니라.</p>
 <h3 id="aws가-이-위에-감싸는-것">AWS가 이 위에 감싸는 것</h3>
-<p>AgentCore에서는 위 코드를 한 줄도 안 쓴다. 관리형 서비스가 이렇게 매핑된다:</p>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<table><thead><tr><th>요소</th><th>AgentCore 구성요소</th></tr></thead><tbody><tr><td>지갑 키·시크릿</td><td><strong>AgentCore Identity</strong> (PaymentCredentialProvider)</td></tr><tr><td>유료 엔드포인트 연결</td><td><strong>AgentCore Gateway</strong> (+ Coinbase x402 Bazaar, 1만+ 엔드포인트)</td></tr><tr><td>페이월 사이트 통과</td><td><strong>AgentCore Browser</strong></td></tr><tr><td>예산 한도 + 만료</td><td><strong>PaymentSession</strong> (<code>maxSpendAmount</code>, currency, TTL)</td></tr><tr><td>감사 추적</td><td><strong>CloudWatch</strong> vended logs + <strong>X-Ray</strong> spans</td></tr></tbody></table>
-<p>편리하다. 하지만 바로 그 편리함 때문에 다음 부분이 중요하다.</p>
+<p>AgentCore에서는 위 코드를 한 줄도 안 쓴다. 내가 직접 만든 각 조각이 관리형 구성요소로 이렇게 매핑된다:</p>
+<table class="spec-table">
+  <thead>
+    <tr><th>관심사</th><th>내가 직접 구현 (x402-lab)</th><th>AgentCore 대응</th></tr>
+  </thead>
+  <tbody>
+    <tr><th scope="row">지갑 키</th><td><code>wallet.py</code> — 메모리상 Ed25519 키</td><td><strong>AgentCore Identity</strong> (PaymentCredentialProvider)</td></tr>
+    <tr><th scope="row">유료 엔드포인트 접근</th><td>하드코딩된 머천트 URL</td><td><strong>AgentCore Gateway</strong> + x402 Bazaar (1만+ 엔드포인트)</td></tr>
+    <tr><th scope="row">페이월 사이트</th><td>미구현</td><td><strong>AgentCore Browser</strong></td></tr>
+    <tr><th scope="row">예산 + 만료</th><td><code>budget_guard.py</code> — 내가 쓴 PaymentSession</td><td><strong>PaymentSession</strong> (<code>maxSpendAmount</code>, TTL)</td></tr>
+    <tr><th scope="row">감사 추적</th><td><code>print()</code> + <code>results.json</code></td><td><strong>CloudWatch</strong> vended logs + <strong>X-Ray</strong> spans</td></tr>
+  </tbody>
+</table>
+<p>정직한 거래다. AgentCore는 가운데 열의 작업 몇 주치를 아껴준다. 하지만 그건 동시에, <em>실패를 봉쇄하는</em> 부분 — 예산 가드, TTL, 감사 추적 — 이 이제 내가 짜서 이해하는 코드가 아니라, 내가 정확히 설정해야 하는 구성이 됐다는 뜻이다. 편리함은 위험을 옮길 뿐, 없애지 않는다. 다음 부분이 중요한 이유다.</p>
 <h2 id="part-2--실험-폭주하는-에이전트는-얼마를-태우나">Part 2 — 실험: 폭주하는 에이전트는 얼마를 태우나</h2>
 <p>에이전트는 비결정적이다. 루프에 빠지고, 프롬프트 인젝션을 당한다. 그래서 질문은 “결제가 되는가”가 아니라 “<strong>잘못됐을 때 얼마나 나쁜가</strong>”다. 같은 버그 걸린 에이전트를, $0.001 엔드포인트에 100번 호출하는 루프에 넣고, 두 가지 방식으로 돌렸다.</p>
 <h3 id="예산-가드가-없을-때">예산 가드가 없을 때</h3>
@@ -166,6 +148,34 @@
 <li><strong>거버넌스</strong>는 “누가 이 돈을 쓰기로 했나”에 “AI가, 이 한도 안에서, 그리고 여기 감사 추적이 있다”로 답해야 한다. 한도와 추적을 못 내놓으면, 준비가 안 된 거다.</li>
 </ol>
 <p>이 간극이 기회다. 대부분의 조직은 <em>말하는</em> 에이전트도 production화 못 했는데, 인프라는 이미 에이전트가 <em>돈 쓰게</em> 한다. “이걸 통제하면서 어떻게 하나”에 — 슬라이드가 아니라 실행 가능한 답으로 — 대답할 수 있는 사람이 신뢰를 얻는다.</p>
+<p>그 거리는 구체적이다. 결제 데모와 실제 예산 위에서 굴릴 수 있는 것 사이의 차이는 이렇다:</p>
+<div class="cmp">
+  <div class="cmp-poc">
+    <span class="cmp-tag">PoC / 데모</span>
+    <h4>"결제되네. 출시!"</h4>
+    <ul>
+      <li>지갑 하나, 에이전트 하나, 분리 없음</li>
+      <li>설정만 하고 실제 거부는 테스트 안 한 예산</li>
+      <li>TTL 없음 — 루프가 알아서 끝나길 기대</li>
+      <li>stdout 로깅, 지출-의도 연결 없음</li>
+      <li>kill switch가 "대시보드 볼게요"</li>
+      <li>Bazaar 1만 엔드포인트 전체 접근</li>
+    </ul>
+  </div>
+  <div class="cmp-prod">
+    <span class="cmp-tag">Production</span>
+    <h4>"통제하면서, 증명 가능하게 결제한다."</h4>
+    <ul>
+      <li>에이전트별 지갑, hot/cold 분리, 순환</li>
+      <li>예산 + 누적 한도, 거부가 작동함을 증명하는 테스트</li>
+      <li>세션 TTL이 <em>시간</em>을 막음 (금액만이 아니라)</li>
+      <li>CloudWatch + X-Ray, 각 지출이 트리거 의도에 연결</li>
+      <li>훈련된 진짜 kill switch — 그래프 보는 사람이 아니라</li>
+      <li>머천트 allowlist (Bazaar 전체가 아니라)</li>
+    </ul>
+  </div>
+</div>
+<p>오른쪽의 모든 항목은 내가 x402-lab에서 측정했거나 설계로 우회해야 했던 실패에 대응한다. 특별할 것 없다 — “지갑을 연결하라”가 조용히 당신에게 떠넘긴 작업일 뿐이다.</p>
 <p>이 통제 질문들을, 같은 실험으로 뒷받침한 체크리스트로 정리했다. 후속 글 **<a href="/ko/writing/commerce-agent-governance/">Commerce Agent 거버넌스 프레임워크</a>**를 보라.</p>
 <h2 id="맺으며">맺으며</h2>
 <p>AWS는 에이전트에게 지갑을 줬고, 그 밑의 프로토콜은 정말로 우아하다. 하지만 “지갑 연결하고 한도 설정”이라는 말은, 부인 불가능한 서명 권한, 초당 3,500건의 지출 속도, 2차원 봉쇄 문제를 한 문장으로 압축한다. 옳은 선택은 두려워하는 게 아니라, <strong>가드를 설계하고 테스트한 뒤에야 결제를 켜는 것</strong>이다.</p>
@@ -173,10 +183,13 @@
 <hr>
 <p><em>코드: <a href="https://github.com/kimnamu/x402-lab">github.com/kimnamu/x402-lab</a> — 클론해서 <code>experiment.py</code>를 돌리면 당신의 숫자가 나온다. 당신 조직은 에이전트에게 어디까지 돈을 맡길 준비가 됐나? 진심으로 궁금하다.</em></p>
 <hr>
-<h3 id="참고-검증된-출처-2026년-5월-기준">참고 (검증된 출처, 2026년 5월 기준)</h3>
+<h3 id="출처-검증됨-2026년-5월-기준">출처 (검증됨, 2026년 5월 기준)</h3>
 <ul>
-<li>AWS 공식 문서, “Amazon Bedrock AgentCore payments” (Developer Guide) — PaymentSession, x402, CDP/Privy 지갑, Identity, 관측가능성</li>
-<li>AWS News Blog, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments…” (2026-05-11)</li>
-<li>x402 프로토콜 — x402.org / github.com/coinbase/x402</li>
+<li><strong>AgentCore Payments 공식 문서</strong> — PaymentSession, x402, CDP/Privy 지갑, Identity, 관측가능성:
+<a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/payments.html">https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/payments.html</a></li>
+<li><strong>AWS News Blog</strong>, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments, Agent Toolkit for AWS, and more” (2026-05-11):
+<a href="https://aws.amazon.com/blogs/aws/aws-weekly-roundup-amazon-bedrock-agentcore-payments-agent-toolkit-for-aws-and-more-may-11-2026/">https://aws.amazon.com/blogs/aws/aws-weekly-roundup-amazon-bedrock-agentcore-payments-agent-toolkit-for-aws-and-more-may-11-2026/</a></li>
+<li><strong>x402 프로토콜</strong> — 공식 사이트: <a href="https://www.x402.org/">https://www.x402.org/</a> · 레퍼런스 구현: <a href="https://github.com/coinbase/x402">https://github.com/coinbase/x402</a></li>
+<li><strong>이 실험의 코드</strong> (x402-lab): <a href="https://github.com/kimnamu/x402-lab">https://github.com/kimnamu/x402-lab</a></li>
 </ul> </div> </article>  </div> </main> <footer class="site-footer"> <div class="wrap"> <span>본 글의 견해는 개인 의견이며 고용주를 대변하지 않습니다.</span> <span class="footer-links"> <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/kimnamu" target="_blank" rel="noopener">GitHub</a>  <a href="/rss.xml">RSS</a> </span> </div> </footer> <p style="text-align:center;font-size:0.75rem;color:var(--fg-faint);padding-bottom:1.5rem;margin:0;">
 © 2026 Jihoon Kim </p> </body></html>

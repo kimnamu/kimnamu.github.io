@@ -6,7 +6,7 @@
           : window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (dark) document.documentElement.classList.add('dark');
       })();
-    </script><link rel="stylesheet" href="/_astro/about.C3RN7tdS.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/" aria-current="page">Writing</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/" title="한국어">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
+    </script><link rel="stylesheet" href="/_astro/about.CBTwVB_a.css"></head> <body> <header class="site-header"> <div class="wrap"> <a class="wordmark" href="/"> Jihoon Kim <span class="role">AI/ML Delivery Consultant</span> </a> <nav class="nav"> <a href="/">Home</a> <a href="/writing/" aria-current="page">Writing</a> <a href="/about/">About</a> <a class="icon-btn" href="/ko/" title="한국어">한국어</a> <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme"> <span id="theme-icon">◐</span> </button> </nav> </div> </header> <script>
   // Theme toggle — persisted in localStorage, applied before paint in BaseLayout.
   const btn = document.getElementById('theme-toggle');
   const apply = (dark) => {
@@ -16,7 +16,7 @@
   btn?.addEventListener('click', () => {
     apply(!document.documentElement.classList.contains('dark'));
   });
-</script> <main> <div class="wrap">  <a class="back-link" href="/writing/">← All writing</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">May 30, 2026</time> <span>·</span> <span>7 min read</span> </div> <h1>I Implemented the Protocol Behind AgentCore Payments — Here&#39;s What the Managed Service Hides</h1> <div class="post-meta"> <span class="tag">#AWS</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#x402</span> </div> </header> <div class="prose"> <blockquote>
+</script> <main> <div class="wrap">  <a class="back-link" href="/writing/">← All writing</a> <article> <header class="article-header"> <div class="post-meta"> <time datetime="2026-05-30T00:00:00.000Z">May 30, 2026</time> <span>·</span> <span>8 min read</span> </div> <h1>I Implemented the Protocol Behind AgentCore Payments — Here&#39;s What the Managed Service Hides</h1> <div class="post-meta"> <span class="tag">#AWS</span><span class="tag">#AgentCore</span><span class="tag">#Agentic AI</span><span class="tag">#x402</span> </div> </header> <div class="prose"> <blockquote>
 <p><em>AWS previewed a capability that lets AI agents spend money on their own. The demos look magical. So I rebuilt the protocol underneath it from scratch — real cryptographic signing, a budget guard, a runaway-spend experiment — to find out what you actually sign up for when you “connect a wallet.” The code is <a href="https://github.com/kimnamu/x402-lab">on GitHub</a>; every number below comes from running it.</em></p>
 <p><em>(Views are my own. AgentCore Payments is in preview as of May 2026; APIs may change. My implementation models the open x402 protocol it uses — signing is real, settlement is mocked. No real funds move.)</em></p>
 </blockquote>
@@ -63,38 +63,20 @@
 <span class="line"><span>verify (amount tampered): False</span></span></code></pre>
 <p>That’s a real test in the repo (<code>test_signature_tampering_rejected</code>), not a diagram.</p>
 <h3 id="what-aws-wraps-around-this">What AWS wraps around this</h3>
-<p>In AgentCore, you don’t write any of the above. The managed service maps to:</p>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<table><thead><tr><th>Piece</th><th>AgentCore component</th></tr></thead><tbody><tr><td>Wallet keys &#x26; secrets</td><td><strong>AgentCore Identity</strong> (PaymentCredentialProvider)</td></tr><tr><td>Connecting to paid endpoints</td><td><strong>AgentCore Gateway</strong> (+ Coinbase x402 Bazaar, 10,000+ endpoints)</td></tr><tr><td>Crossing paywalled sites</td><td><strong>AgentCore Browser</strong></td></tr><tr><td>Budget ceiling + expiry</td><td><strong>PaymentSession</strong> (<code>maxSpendAmount</code>, currency, TTL)</td></tr><tr><td>Audit trail</td><td><strong>CloudWatch</strong> vended logs + <strong>X-Ray</strong> spans</td></tr></tbody></table>
-<p>Convenient. But convenience is exactly why the next part matters.</p>
+<p>In AgentCore you don’t write any of the above. Each piece I hand-built maps to a managed component:</p>
+<table class="spec-table">
+  <thead>
+    <tr><th>Concern</th><th>My from-scratch build (x402-lab)</th><th>AgentCore equivalent</th></tr>
+  </thead>
+  <tbody>
+    <tr><th scope="row">Wallet keys</th><td><code>wallet.py</code> — Ed25519 key in memory</td><td><strong>AgentCore Identity</strong> (PaymentCredentialProvider)</td></tr>
+    <tr><th scope="row">Reaching paid endpoints</th><td>hardcoded merchant URL</td><td><strong>AgentCore Gateway</strong> + x402 Bazaar (10,000+ endpoints)</td></tr>
+    <tr><th scope="row">Paywalled sites</th><td>not built</td><td><strong>AgentCore Browser</strong></td></tr>
+    <tr><th scope="row">Budget + expiry</th><td><code>budget_guard.py</code> — PaymentSession I wrote</td><td><strong>PaymentSession</strong> (<code>maxSpendAmount</code>, TTL)</td></tr>
+    <tr><th scope="row">Audit trail</th><td><code>print()</code> + <code>results.json</code></td><td><strong>CloudWatch</strong> vended logs + <strong>X-Ray</strong> spans</td></tr>
+  </tbody>
+</table>
+<p>That’s the honest trade: AgentCore saves you weeks of exactly the work in that middle column. But it also means the budget guard, the TTL, the audit trail — the parts that <em>contain failure</em> — are now configuration you must get right, not code you wrote and understand. Convenience moves the risk, it doesn’t remove it. Which is exactly why the next part matters.</p>
 <h2 id="part-2--the-experiment-what-a-runaway-agent-costs">Part 2 — The experiment: what a runaway agent costs</h2>
 <p>Agents are non-deterministic. They get stuck in loops; they get prompt-injected. So the question isn’t “does payment work” — it’s “<strong>when it goes wrong, how bad is it?</strong>” I ran the same buggy agent, stuck in a 100-call loop against a $0.001 endpoint, two ways.</p>
 <h3 id="without-a-budget-guard">Without a budget guard</h3>
@@ -166,6 +148,34 @@
 <li><strong>Governance</strong> has to answer “who decided to spend this?” with “the AI did, under these limits, and here’s the audit trail.” If you can’t produce the limits and the trail, you’re not ready.</li>
 </ol>
 <p>The gap is the opportunity. Most organizations haven’t productionized an agent that <em>talks</em>, yet the infrastructure already lets agents <em>spend</em>. The consultants and architects who can answer “how do we do this under control” — with executable answers, not slideware — are the ones who’ll be trusted with it.</p>
+<p>The distance between the two is concrete. Here’s what separates a payment demo from something you’d run on a real budget:</p>
+<div class="cmp">
+  <div class="cmp-poc">
+    <span class="cmp-tag">PoC / demo</span>
+    <h4>"It pays. Ship it."</h4>
+    <ul>
+      <li>One wallet, one agent, no separation</li>
+      <li>A budget that's set but never tested for actual denial</li>
+      <li>No TTL — relies on the loop ending on its own</li>
+      <li>Logs to stdout; no spend-to-intent linkage</li>
+      <li>"We'll watch the dashboard" as the kill switch</li>
+      <li>Reaches all 10,000 Bazaar endpoints</li>
+    </ul>
+  </div>
+  <div class="cmp-prod">
+    <span class="cmp-tag">Production</span>
+    <h4>"It pays, under control, provably."</h4>
+    <ul>
+      <li>Per-agent wallets; hot/cold split; rotation</li>
+      <li>Budget + cumulative cap, with a test that proves denial fires</li>
+      <li>Session TTL bounds <em>time</em>, not just amount</li>
+      <li>CloudWatch + X-Ray, each spend tied to a triggering intent</li>
+      <li>A real kill switch, drilled — not a human watching a graph</li>
+      <li>Merchant allowlist, not the whole Bazaar</li>
+    </ul>
+  </div>
+</div>
+<p>Every item on the right maps to a failure I either measured in x402-lab or had to design around. None of it is exotic — it’s just the work that “connect a wallet” quietly defers to you.</p>
 <p>I turned the control questions into a checklist backed by these same experiments: see the companion piece, <strong><a href="/writing/commerce-agent-governance/">the Commerce Agent Governance Framework</a></strong>.</p>
 <h2 id="closing">Closing</h2>
 <p>AWS gave agents a wallet, and the protocol underneath is genuinely elegant. But “connect a wallet and set a limit” compresses a non-repudiable signing authority, a 3,500/sec spend rate, and a two-dimensional containment problem into one sentence. The right move isn’t to fear it — it’s to <strong>turn payments on only after you’ve designed, and tested, the guard.</strong></p>
@@ -173,10 +183,13 @@
 <hr>
 <p><em>Code: <a href="https://github.com/kimnamu/x402-lab">github.com/kimnamu/x402-lab</a> — clone it, run <code>experiment.py</code>, get your own numbers. How far is your org ready to let agents spend? I’d genuinely like to know.</em></p>
 <hr>
-<h3 id="references-verified-as-of-may-2026">References (verified, as of May 2026)</h3>
+<h3 id="sources-verified-as-of-may-2026">Sources (verified, as of May 2026)</h3>
 <ul>
-<li>AWS Documentation, “Amazon Bedrock AgentCore payments” (Developer Guide) — PaymentSession, x402, CDP/Privy wallets, Identity, observability</li>
-<li>AWS News Blog, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments…” (2026-05-11)</li>
-<li>x402 protocol — x402.org / github.com/coinbase/x402</li>
+<li><strong>AgentCore Payments official docs</strong> — PaymentSession, x402, CDP/Privy wallets, Identity, observability:
+<a href="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/payments.html">https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/payments.html</a></li>
+<li><strong>AWS News Blog</strong>, “AWS Weekly Roundup: Amazon Bedrock AgentCore payments, Agent Toolkit for AWS, and more” (2026-05-11):
+<a href="https://aws.amazon.com/blogs/aws/aws-weekly-roundup-amazon-bedrock-agentcore-payments-agent-toolkit-for-aws-and-more-may-11-2026/">https://aws.amazon.com/blogs/aws/aws-weekly-roundup-amazon-bedrock-agentcore-payments-agent-toolkit-for-aws-and-more-may-11-2026/</a></li>
+<li><strong>x402 protocol</strong> — official site: <a href="https://www.x402.org/">https://www.x402.org/</a> · reference implementation: <a href="https://github.com/coinbase/x402">https://github.com/coinbase/x402</a></li>
+<li><strong>This experiment’s code</strong> (x402-lab): <a href="https://github.com/kimnamu/x402-lab">https://github.com/kimnamu/x402-lab</a></li>
 </ul> </div> </article>  </div> </main> <footer class="site-footer"> <div class="wrap"> <span>Views are my own and do not represent my employer.</span> <span class="footer-links"> <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> <a href="https://github.com/kimnamu" target="_blank" rel="noopener">GitHub</a>  <a href="/rss.xml">RSS</a> </span> </div> </footer> <p style="text-align:center;font-size:0.75rem;color:var(--fg-faint);padding-bottom:1.5rem;margin:0;">
 © 2026 Jihoon Kim </p> </body></html>
